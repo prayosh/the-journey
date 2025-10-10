@@ -8,16 +8,35 @@ import TaskModal from './components/TaskModal';
 import HistoryModal from './components/HistoryModal';
 import NotificationArea from './components/NotificationArea';
 import QuoteOfTheDay from './components/QuoteOfTheDay';
-import { GoogleGenAI, Type } from "@google/genai";
 
 // Constants
 const HISTORY_KEY = 'journey_history_v2';
 const THEME_KEY = 'journey_custom_theme';
 const QUOTE_KEY = 'journey_daily_quote';
+const QUOTE_INDEX_KEY = 'journey_quote_index';
 const COLOR_PALETTE = [
     '#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e', '#14b8a6', 
     '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef', '#ec4899'
 ];
+
+const LOCAL_QUOTES: Quote[] = [
+    { quote: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
+    { quote: "The journey of a thousand miles begins with a single step.", author: "Lao Tzu" },
+    { quote: "Believe you can and you're halfway there.", author: "Theodore Roosevelt" },
+    { quote: "Success is not final, failure is not fatal: it is the courage to continue that counts.", author: "Winston Churchill" },
+    { quote: "It does not matter how slowly you go as long as you do not stop.", author: "Confucius" },
+    { quote: "Act as if what you do makes a difference. It does.", author: "William James" },
+    { quote: "The secret of getting ahead is getting started.", author: "Mark Twain" },
+    { quote: "Your limitation—it's only your imagination.", author: "Unknown" },
+    { quote: "Push yourself, because no one else is going to do it for you.", author: "Unknown" },
+    { quote: "Great things never come from comfort zones.", author: "Unknown" },
+    { quote: "Dream it. Wish it. Do it.", author: "Unknown" },
+    { quote: "Success doesn’t just find you. You have to go out and get it.", author: "Unknown" },
+    { quote: "The harder you work for something, the greater you'll feel when you achieve it.", author: "Unknown" },
+    { quote: "Dream bigger. Do bigger.", author: "Unknown" },
+    { quote: "Don't stop when you're tired. Stop when you're done.", author: "Unknown" }
+];
+
 
 const DEFAULT_THEME: Theme = {
     background: '#0f172a',    // slate-900
@@ -52,8 +71,6 @@ const App: React.FC = () => {
 
     // --- Quote State ---
     const [dailyQuote, setDailyQuote] = useState<Quote | null>(null);
-    const [isQuoteLoading, setQuoteLoading] = useState<boolean>(false);
-    const [quoteError, setQuoteError] = useState<string | null>(null);
 
     // --- Audio setup ---
     const audioInitialized = useRef(false);
@@ -89,41 +106,6 @@ const App: React.FC = () => {
         const newNotification: Notification = { id: notificationCounter.current, message, type };
         setNotifications(prev => [...prev, newNotification]);
     }, []);
-
-    // --- Quote Fetching ---
-    const fetchAndSetQuote = useCallback(async () => {
-        setQuoteLoading(true);
-        setQuoteError(null);
-        try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-            const response = await ai.models.generateContent({
-                model: "gemini-2.5-flash",
-                contents: "Provide a short, inspirational quote.",
-                config: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: Type.OBJECT,
-                        properties: {
-                            quote: { type: Type.STRING, description: 'The inspirational quote.' },
-                            author: { type: Type.STRING, description: 'The author of the quote. Use "Unknown" if not available.' },
-                        },
-                        required: ["quote", "author"],
-                    },
-                },
-            });
-
-            const jsonString = response.text.trim();
-            const newQuote: Quote = JSON.parse(jsonString);
-            
-            setDailyQuote(newQuote);
-            localStorage.setItem(QUOTE_KEY, JSON.stringify({ date: getTodayKey(), quote: newQuote }));
-        } catch (error) {
-            console.error("Error fetching quote:", error);
-            setQuoteError("Could not fetch a new quote. Please try again.");
-        } finally {
-            setQuoteLoading(false);
-        }
-    }, [getTodayKey]);
 
     // --- Data Persistence & Daily Rollover ---
     const saveHistoryToStorage = useCallback((updatedHistory: HistoryData) => {
@@ -172,16 +154,26 @@ const App: React.FC = () => {
 
         // Daily Quote
         const savedQuoteData = localStorage.getItem(QUOTE_KEY);
+        let quoteToSet: Quote | null = null;
         if (savedQuoteData) {
             const { date, quote } = JSON.parse(savedQuoteData);
             if (date === todayKey) {
-                setDailyQuote(quote);
-            } else {
-                fetchAndSetQuote();
+                quoteToSet = quote;
             }
-        } else {
-            fetchAndSetQuote();
         }
+
+        if (!quoteToSet) { // If no quote is set for today, get a new one
+            const lastIndexStr = localStorage.getItem(QUOTE_INDEX_KEY);
+            const lastIndex = lastIndexStr ? parseInt(lastIndexStr, 10) : -1;
+            const newIndex = (lastIndex + 1) % LOCAL_QUOTES.length;
+            
+            quoteToSet = LOCAL_QUOTES[newIndex];
+            
+            localStorage.setItem(QUOTE_KEY, JSON.stringify({ date: todayKey, quote: quoteToSet }));
+            localStorage.setItem(QUOTE_INDEX_KEY, newIndex.toString());
+        }
+        setDailyQuote(quoteToSet);
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // Run only on initial mount
 
@@ -367,12 +359,7 @@ const App: React.FC = () => {
                     onDeleteTask={handleDeleteTask}
                 />
                  {!viewingDate && (
-                    <QuoteOfTheDay
-                        quote={dailyQuote}
-                        isLoading={isQuoteLoading}
-                        error={quoteError}
-                        onRetry={fetchAndSetQuote}
-                    />
+                    <QuoteOfTheDay quote={dailyQuote} />
                 )}
             </div>
 
