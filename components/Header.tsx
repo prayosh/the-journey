@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { HistoryLog, Theme } from '../types';
+import { HistoryLog, Theme } from '../types.ts';
 
 interface HeaderProps {
     tasks: HistoryLog[];

@@ -1,6 +1,6 @@
 import React from 'react';
-import { HistoryLog } from '../types';
-import { CheckIcon, EditIcon, TrashIcon } from './Icons';
+import { HistoryLog } from '../types.ts';
+import { CheckIcon, EditIcon, TrashIcon } from './Icons.tsx';
 
 interface TaskItemProps {
     task: HistoryLog;

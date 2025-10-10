@@ -1,7 +1,5 @@
-
-
 import React from 'react';
-import { MenuIcon, PlusIcon } from './Icons';
+import { MenuIcon, PlusIcon } from './Icons.tsx';
 
 interface BottomNavProps {
     onOpenMenu: () => void;

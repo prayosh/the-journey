@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { HistoryData } from '../types';
-import { XIcon } from './Icons';
+import { HistoryData } from '../types.ts';
+import { XIcon } from './Icons.tsx';
 
 interface HistoryModalProps {
     isOpen: boolean;

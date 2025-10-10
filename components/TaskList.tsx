@@ -1,7 +1,7 @@
 import React from 'react';
-import { HistoryLog } from '../types';
-import TaskItem from './TaskItem';
-import { CompassIcon, PlusIcon, ChevronDownIcon } from './Icons';
+import { HistoryLog } from '../types.ts';
+import TaskItem from './TaskItem.tsx';
+import { CompassIcon, PlusIcon, ChevronDownIcon } from './Icons.tsx';
 
 interface TaskListProps {
     dailyTasks: HistoryLog[];

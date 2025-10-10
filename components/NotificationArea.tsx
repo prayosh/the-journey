@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
-import { Notification as NotificationType } from '../types';
-import { CheckCircleIcon, XCircleIcon, InfoIcon } from './Icons';
+import { Notification as NotificationType } from '../types.ts';
+import { CheckCircleIcon, XCircleIcon, InfoIcon } from './Icons.tsx';
 
 interface NotificationProps {
     notification: NotificationType;

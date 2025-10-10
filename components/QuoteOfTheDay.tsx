@@ -1,5 +1,5 @@
 import React from 'react';
-import { Quote } from '../types';
+import { Quote } from '../types.ts';
 
 interface QuoteOfTheDayProps {
     quote: Quote | null;

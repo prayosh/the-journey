@@ -1,7 +1,7 @@
 import React from 'react';
 // Fix: Import the Theme interface to use for props.
-import { Theme } from '../types';
-import { CalendarIcon, DownloadIcon, UploadIcon, XIcon } from './Icons';
+import { Theme } from '../types.ts';
+import { CalendarIcon, DownloadIcon, UploadIcon, XIcon } from './Icons.tsx';
 
 // Fix: Use the strong-typed Theme interface for theme props.
 interface SidebarProps {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, FormEvent } from 'react';
-import { Subtask, EditingHistoryLogState } from '../types';
-import { PlusIcon, XIcon } from './Icons';
+import { Subtask, EditingHistoryLogState } from '../types.ts';
+import { PlusIcon, XIcon } from './Icons.tsx';
 
 interface TaskModalProps {
     isOpen: boolean;

@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Subtask, HistoryData, HistoryLog, Notification, EditingHistoryLogState, Theme, Quote } from './types';
-import Sidebar from './components/Sidebar';
-import Header from './components/Header';
-import TaskList from './components/TaskList';
-import BottomNav from './components/BottomNav';
-import TaskModal from './components/TaskModal';
-import HistoryModal from './components/HistoryModal';
-import NotificationArea from './components/NotificationArea';
-import QuoteOfTheDay from './components/QuoteOfTheDay';
+import { Subtask, HistoryData, HistoryLog, Notification, EditingHistoryLogState, Theme, Quote } from './types.ts';
+import Sidebar from './components/Sidebar.tsx';
+import Header from './components/Header.tsx';
+import TaskList from './components/TaskList.tsx';
+import BottomNav from './components/BottomNav.tsx';
+import TaskModal from './components/TaskModal.tsx';
+import HistoryModal from './components/HistoryModal.tsx';
+import NotificationArea from './components/NotificationArea.tsx';
+import QuoteOfTheDay from './components/QuoteOfTheDay.tsx';
 
 // Constants
 const HISTORY_KEY = 'journey_history_v2';

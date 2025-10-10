@@ -1,8 +1,8 @@
 const CACHE_NAME = 'the-journey-cache-v1';
 const URLS_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/logo.png',
+  './',
+  './index.html',
+  './logo.png',
   'https://cdn.tailwindcss.com',
   'https://fonts.googleapis.com/css2?family=Great+Vibes&family=Inter:wght@100..900&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js'
