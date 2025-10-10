@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Journey - Advanced Task Tracker</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Google Fonts for Cursive and Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Inter:wght@100..900&display=swap" rel="stylesheet">
+    <!-- Load Tone.js for sound effects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+
+    <style>
+        /* --- Theme-Independent Styles --- */
+        body { 
+            font-family: 'Inter', sans-serif; 
+            transition: background-color 0.5s, color 0.5s;
+        }
+        .cursive-title {
+            font-family: 'Great Vibes', cursive;
+        }
+
+        /* Hide scrollbar for aesthetics */
+        body::-webkit-scrollbar { display: none; }
+        body { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Transitions */
+        .sidebar, .modal { transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out, visibility 0.3s ease-in-out; }
+        .progress-bar { transition: width 0.5s ease-out; }
+        
+        /* --- DYNAMIC THEME STYLES (via CSS Variables) --- */
+
+        /* Base App Styles */
+        .app-bg { background-color: var(--app-bg); }
+        .app-text { color: var(--app-text); }
+        .app-border { border-color: var(--app-border); }
+        
+        /* Primary/Accent Styles */
+        .theme-text { color: var(--app-primary); }
+        .theme-bg { background-color: var(--app-primary); }
+        .theme-border { border-color: var(--app-primary); }
+        .theme-ring-focus:focus { --tw-ring-color: var(--app-primary); }
+        
+        /* Card & UI Element Styles */
+        .card-bg { background-color: var(--app-card-bg); }
+        .card-hover:hover { background-color: var(--app-card-hover-bg); }
+        .input-bg { background-color: var(--app-input-bg); }
+        .progress-track-bg { background-color: var(--app-border); }
+
+        /* Custom Checkbox Style */
+        .custom-checkbox { position: relative; }
+        .custom-checkbox .check-icon { opacity: 0; transition: opacity 0.2s ease; }
+        .custom-checkbox.checked .check-icon { opacity: 1; }
+        
+        /* Modal specific transitions */
+        .modal-active { visibility: visible; opacity: 1; pointer-events: auto; }
+        .modal-inactive { visibility: hidden; opacity: 0; pointer-events: none; }
+        .modal-card-active { transform: scale(1); opacity: 1; }
+        .modal-card-inactive { transform: scale(0.95); opacity: 0; }
+
+        /* Calendar Styling */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0"
+  }
+}
+</script>
+</head>
+<body class="min-h-screen app-bg app-text">
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+</body>
+</html>

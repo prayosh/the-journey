@@ -1,0 +1,5 @@
+{
+  "name": "The Journey",
+  "description": "An advanced task and subtask tracker with daily progress, historical logging via a calendar view, and data management features. Built with a focus on aesthetics and user experience, including theme switching and sound effects.",
+  "requestFramePermissions": []
+}
