@@ -36,3 +36,8 @@ export interface Theme {
     border: string;
     input: string;
 }
+
+export interface Quote {
+    quote: string;
+    author: string;
+}

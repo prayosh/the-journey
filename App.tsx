@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Subtask, HistoryData, HistoryLog, Notification, EditingHistoryLogState, Theme } from './types';
+import { Subtask, HistoryData, HistoryLog, Notification, EditingHistoryLogState, Theme, Quote } from './types';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import TaskList from './components/TaskList';
@@ -7,10 +7,13 @@ import BottomNav from './components/BottomNav';
 import TaskModal from './components/TaskModal';
 import HistoryModal from './components/HistoryModal';
 import NotificationArea from './components/NotificationArea';
+import QuoteOfTheDay from './components/QuoteOfTheDay';
+import { GoogleGenAI, Type } from "@google/genai";
 
 // Constants
-const HISTORY_KEY = 'journey_history_v2'; // New key for the new data model
+const HISTORY_KEY = 'journey_history_v2';
 const THEME_KEY = 'journey_custom_theme';
+const QUOTE_KEY = 'journey_daily_quote';
 const COLOR_PALETTE = [
     '#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e', '#14b8a6', 
     '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef', '#ec4899'
@@ -47,6 +50,11 @@ const App: React.FC = () => {
     const notificationCounter = useRef<number>(0);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // --- Quote State ---
+    const [dailyQuote, setDailyQuote] = useState<Quote | null>(null);
+    const [isQuoteLoading, setQuoteLoading] = useState<boolean>(false);
+    const [quoteError, setQuoteError] = useState<string | null>(null);
+
     // --- Audio setup ---
     const audioInitialized = useRef(false);
     const synth = useRef<any>(null);
@@ -82,6 +90,41 @@ const App: React.FC = () => {
         setNotifications(prev => [...prev, newNotification]);
     }, []);
 
+    // --- Quote Fetching ---
+    const fetchAndSetQuote = useCallback(async () => {
+        setQuoteLoading(true);
+        setQuoteError(null);
+        try {
+            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+            const response = await ai.models.generateContent({
+                model: "gemini-2.5-flash",
+                contents: "Provide a short, inspirational quote.",
+                config: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: Type.OBJECT,
+                        properties: {
+                            quote: { type: Type.STRING, description: 'The inspirational quote.' },
+                            author: { type: Type.STRING, description: 'The author of the quote. Use "Unknown" if not available.' },
+                        },
+                        required: ["quote", "author"],
+                    },
+                },
+            });
+
+            const jsonString = response.text.trim();
+            const newQuote: Quote = JSON.parse(jsonString);
+            
+            setDailyQuote(newQuote);
+            localStorage.setItem(QUOTE_KEY, JSON.stringify({ date: getTodayKey(), quote: newQuote }));
+        } catch (error) {
+            console.error("Error fetching quote:", error);
+            setQuoteError("Could not fetch a new quote. Please try again.");
+        } finally {
+            setQuoteLoading(false);
+        }
+    }, [getTodayKey]);
+
     // --- Data Persistence & Daily Rollover ---
     const saveHistoryToStorage = useCallback((updatedHistory: HistoryData) => {
         try {
@@ -90,6 +133,7 @@ const App: React.FC = () => {
     }, [showNotification]);
 
     useEffect(() => {
+        // Task History and Daily Rollover
         let loadedHistory: HistoryData = {};
         try {
             const storedHistory = localStorage.getItem(HISTORY_KEY);
@@ -106,27 +150,38 @@ const App: React.FC = () => {
             
             if (mostRecentDateKey) {
                 const mostRecentTasks = loadedHistory[mostRecentDateKey] || [];
-                // Filter for tasks that are NOT unavoidable to roll them over
                 const tasksToCarryOver = mostRecentTasks.filter(task => !task.isUnavoidable);
 
                 loadedHistory[todayKey] = tasksToCarryOver.map(task => ({
                     ...task,
-                    id: generateId(), // Give it a new ID for the new day
+                    id: generateId(),
                     completed: false,
                     subtasks: task.subtasks.map(st => ({ ...st, completed: false })),
                     completedAt: new Date().toISOString()
                 }));
-                showNotification("A new day! Yesterday's tasks have rolled over.", 'info');
             } else {
                  loadedHistory[todayKey] = [];
             }
         }
-        
         setTaskHistory(loadedHistory);
         saveHistoryToStorage(loadedHistory);
         
+        // Theme
         const savedTheme = localStorage.getItem(THEME_KEY);
         if (savedTheme) { setCustomTheme(JSON.parse(savedTheme)); }
+
+        // Daily Quote
+        const savedQuoteData = localStorage.getItem(QUOTE_KEY);
+        if (savedQuoteData) {
+            const { date, quote } = JSON.parse(savedQuoteData);
+            if (date === todayKey) {
+                setDailyQuote(quote);
+            } else {
+                fetchAndSetQuote();
+            }
+        } else {
+            fetchAndSetQuote();
+        }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // Run only on initial mount
 
@@ -158,7 +213,6 @@ const App: React.FC = () => {
                 const index = dateHistory.findIndex(t => t.id === taskData.id);
                 if (index !== -1) {
                     const updatedTask = { ...dateHistory[index], title: taskData.title, subtasks: taskData.subtasks };
-                    // Recalculate completion
                     updatedTask.completed = updatedTask.subtasks.length > 0 ? updatedTask.subtasks.every(st => st.completed) : updatedTask.completed;
                     dateHistory[index] = updatedTask;
                 }
@@ -217,10 +271,6 @@ const App: React.FC = () => {
         setTaskHistory(prev => {
             const dateHistory = (prev[dateKey] || []).filter(t => t.id !== logId);
             const newHistory = { ...prev, [dateKey]: dateHistory };
-            if (newHistory[dateKey].length === 0) {
-                // We might want to keep the empty day entry for rollover purposes
-                // delete newHistory[dateKey];
-            }
             saveHistoryToStorage(newHistory);
             playWhoosh();
             return newHistory;
@@ -229,7 +279,6 @@ const App: React.FC = () => {
 
     // --- Modal Controls ---
     const openTaskModalToAdd = (isUnavoidable: boolean) => {
-        const dateKey = viewingDate || getTodayKey();
         setIsAddingUnavoidable(isUnavoidable);
         setEditingHistoryLog(null);
         setTaskModalOpen(true);
@@ -271,8 +320,6 @@ const App: React.FC = () => {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        showNotification(`Data exported successfully as ${filename}!`, 'success');
-        playChime();
     };
 
     const importData = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -287,8 +334,6 @@ const App: React.FC = () => {
                 setTaskHistory(importedData.history);
                 if (importedData.customTheme) setCustomTheme(importedData.customTheme);
                 saveHistoryToStorage(importedData.history);
-                showNotification(`Successfully imported data.`, 'success');
-                playChime();
                 setSidebarOpen(false);
             } catch (error) {
                 showNotification(`Import failed: ${(error as Error).message || 'File is corrupted.'}`, 'error');
@@ -321,6 +366,14 @@ const App: React.FC = () => {
                     onEditTask={openTaskModalToEdit}
                     onDeleteTask={handleDeleteTask}
                 />
+                 {!viewingDate && (
+                    <QuoteOfTheDay
+                        quote={dailyQuote}
+                        isLoading={isQuoteLoading}
+                        error={quoteError}
+                        onRetry={fetchAndSetQuote}
+                    />
+                )}
             </div>
 
             {viewingDate && (
