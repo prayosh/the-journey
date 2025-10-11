@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Journey - Advanced Task Tracker</title>
     <meta name="theme-color" content="#6366f1" />
+    <link rel="manifest" href="/manifest.json">
 
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -793,6 +794,19 @@
         if (rootElement) {
             const root = ReactDOM.createRoot(rootElement);
             root.render(<App />);
+        }
+    </script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('Service Worker registered with scope:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.error('Service Worker registration failed:', error);
+                    });
+            });
         }
     </script>
 </body>
