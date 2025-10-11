@@ -1,28 +1,13 @@
-const CACHE_NAME = 'the-journey-cache-v1';
+const CACHE_NAME = 'the-journey-cache-v2';
 const URLS_TO_CACHE = [
   './',
   './index.html',
   './manifest.json',
   './logo.png',
-  // App source files
-  './index.tsx',
-  './App.tsx',
-  './types.ts',
-  './components/Sidebar.tsx',
-  './components/Header.tsx',
-  './components/TaskList.tsx',
-  './components/TaskItem.tsx',
-  './components/BottomNav.tsx',
-  './components/TaskModal.tsx',
-  './components/HistoryModal.tsx',
-  './components/NotificationArea.tsx',
-  './components/Icons.tsx',
-  './components/QuoteOfTheDay.tsx',
   // External dependencies
   'https://cdn.tailwindcss.com',
   'https://fonts.googleapis.com/css2?family=Great+Vibes&family=Inter:wght@100..900&display=swap',
-  'https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js',
-  'https://unpkg.com/@babel/standalone/babel.min.js'
+  'https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js'
 ];
 
 self.addEventListener('install', (event) => {
@@ -30,7 +15,7 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('Opened cache');
-        // Use non-blocking addAll
+        // Use non-blocking addAll and handle potential CORS issues with CDN resources
         const promises = URLS_TO_CACHE.map(url => {
             return cache.add(new Request(url, { mode: 'no-cors' })).catch(err => {
                 console.warn('Failed to cache:', url, err);
@@ -57,29 +42,32 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // For navigation requests, always try network first, then cache, for freshest content.
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // For other requests (CSS, JS, images), use cache-first strategy.
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
-        // Cache hit - return response
         if (response) {
           return response;
         }
 
-        // Clone the request because it's a stream and can only be consumed once.
         const fetchRequest = event.request.clone();
 
         return fetch(fetchRequest).then(
           (response) => {
-            // Check if we received a valid response
             if (!response || response.status !== 200) {
               return response;
             }
             
-            // Check if the request is for a CDN resource. If so, it will be an opaque response.
             if (response.type === 'opaque' || response.type === 'cors' || response.type === 'basic') {
-                // Clone the response because it's also a stream.
                 const responseToCache = response.clone();
-
                 caches.open(CACHE_NAME)
                   .then((cache) => {
                     cache.put(event.request, responseToCache);
@@ -89,9 +77,7 @@ self.addEventListener('fetch', (event) => {
             return response;
           }
         ).catch(err => {
-            console.error('Fetch failed; returning offline page instead.', err);
-            // Optionally, return a fallback offline page here
-            // For example: return caches.match('/offline.html');
+            console.error('Fetch failed; resource not in cache.', err);
         });
       })
     );
