@@ -4,10 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Journey - Advanced Task Tracker</title>
-    <!-- PWA Manifest & Theme -->
-    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#6366f1" />
-    <link rel="apple-touch-icon" href="logo.png">
 
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -15,6 +12,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Inter:wght@100..900&display=swap" rel="stylesheet">
     <!-- Load Tone.js for sound effects -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+
+    <!-- React, ReactDOM, and Babel for in-browser JSX transpilation -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <style>
         /* --- Theme-Independent Styles --- */
@@ -81,838 +83,717 @@
             animation: fadeInRight 0.5s ease-out forwards;
         }
     </style>
-<script type="importmap">
-{
-  "imports": {
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "react/": "https://aistudiocdn.com/react@^19.2.0/"
-  }
-}
-</script>
 </head>
 <body class="min-h-screen app-bg app-text">
     <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
     
-    <div id="root">
-        <!-- Sidebar -->
-        <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-30 hidden"></div>
-        <div id="sidebar" class="sidebar card-bg fixed top-0 left-0 h-full w-64 z-40 shadow-2xl p-6 transition-transform duration-300 transform -translate-x-full app-border border-r">
-            <div class="flex justify-between items-center mb-8 app-border border-b pb-4">
-                <h1 class="text-3xl font-bold theme-text">Settings</h1>
-                <button id="sidebar-close-btn" class="p-2 rounded-full transition theme-text" aria-label="Close menu">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
-                </button>
-            </div>
-            <div class="space-y-6">
-                <button id="open-history-btn" class="w-full flex items-center justify-center p-3 rounded-xl transition-colors duration-200 theme-text theme-border/50 border card-hover">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 w-5 h-5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                    Task History
-                </button>
-                <div class="space-y-3 pt-4 app-border border-t">
-                    <p class="text-sm font-semibold theme-text border-b app-border/30 pb-2">Local Data Backup</p>
-                    <button id="export-data-btn" class="w-full flex items-center justify-center p-3 rounded-xl transition-colors duration-200 theme-bg hover:opacity-90 text-white shadow-md">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 w-5 h-5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                        Export Data (JSON)
-                    </button>
-                    <button id="import-data-btn" class="w-full flex items-center justify-center p-3 rounded-xl transition-colors duration-200 theme-text theme-border/50 border card-hover">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 w-5 h-5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                        Import Data (JSON)
-                    </button>
-                </div>
-                <div class="space-y-3 pt-4 app-border border-t">
-                    <p class="text-sm font-semibold theme-text border-b app-border/30 pb-2">Theme Customization</p>
-                    <div id="theme-inputs"></div>
-                    <button id="reset-theme-btn" class="w-full text-xs p-2 mt-2 rounded-lg theme-border border hover:opacity-80 transition">
-                        Reset to Default Theme
-                    </button>
-                </div>
-            </div>
-        </div>
-        <input type="file" id="import-file-input" class="hidden" accept=".json" />
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback, useMemo } = React;
 
-        <!-- Main Content -->
-        <div class="flex-grow p-4 md:p-8 pt-2 overflow-y-auto pb-24">
-            <header id="header-container" class="flex flex-col items-center py-4 relative"></header>
-            <div id="task-list-container" class="max-w-3xl mx-auto mt-8"></div>
-            <div id="quote-container" class="max-w-3xl mx-auto mt-12 p-6 border-2 border-dashed rounded-xl app-border transition-colors"></div>
-        </div>
+        // --- ICONS ---
+        const CalendarIcon = (props) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        );
+        const DownloadIcon = (props) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        );
+        const UploadIcon = (props) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        );
+        const XIcon = (props) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+        );
+        const MenuIcon = (props) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        );
+        const PlusIcon = (props) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        );
+        const CheckIcon = (props) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polyline points="20 6 9 17 4 12"/></svg>
+        );
+        const EditIcon = (props) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+        );
+        const TrashIcon = (props) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+        );
+        const CompassIcon = (props) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+        );
+        const CheckCircleIcon = (props) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+        );
+        const XCircleIcon = (props) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        );
+        const InfoIcon = (props) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+        );
+        const ChevronDownIcon = (props) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="m6 9 6 6 6-6"/></svg>
+        );
 
-        <!-- Floating Buttons -->
-        <div id="return-to-today-container" class="fixed bottom-0 left-1/2 -translate-x-1/2 mb-4 z-30 hidden">
-            <button id="return-to-today-btn" class="px-6 py-3 text-base font-semibold rounded-full theme-bg text-white hover:opacity-90 transition shadow-lg flex items-center">
-                &larr; Return to Today
-            </button>
-        </div>
-        <div class="fixed bottom-0 left-0 right-0 z-30 flex justify-between p-4 pointer-events-none">
-            <button id="open-menu-btn" class="w-14 h-14 rounded-full pointer-events-auto shadow-2xl flex items-center justify-center transform hover:scale-110 transition duration-300 focus:outline-none theme-bg text-white" aria-label="Open menu">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-            </button>
-            <button id="add-daily-task-btn" class="w-14 h-14 rounded-full pointer-events-auto shadow-2xl flex items-center justify-center transform hover:scale-110 transition duration-300 focus:outline-none theme-bg text-white" aria-label="Add new task">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-[30px] h-[30px]"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            </button>
-        </div>
 
-        <!-- Task Modal -->
-        <div id="task-modal" class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/70 modal-inactive">
-            <div class="modal-card p-6 w-full max-w-md rounded-2xl shadow-2xl transform transition duration-300 modal-card-inactive opacity-0 card-bg">
-                <div class="flex justify-between items-center mb-4 border-b pb-3 app-border">
-                    <h2 id="task-modal-title" class="text-2xl font-bold theme-text">Add New Daily Task</h2>
-                    <button id="task-modal-close-btn" class="p-1 rounded-full text-gray-300 transition" aria-label="Close modal">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
-                    </button>
-                </div>
-                <form id="task-form">
-                    <div class="mb-4">
-                        <label for="taskTitle" class="block text-sm font-medium mb-1">Task Title <span class="text-red-500">*</span></label>
-                        <input id="taskTitle" type="text" placeholder="e.g., Complete Morning Run" class="w-full p-3 rounded-lg border theme-ring-focus focus:ring-2 transition-colors duration-200 input-bg app-border app-text" required />
+        // --- COMPONENTS ---
+
+        const QuoteOfTheDay = ({ quote }) => {
+            if (!quote) {
+                return (
+                    <div className="max-w-3xl mx-auto mt-12 p-6 border-2 border-dashed rounded-xl app-border transition-colors">
+                        <p className="text-center italic text-gray-400">Loading inspiration...</p>
                     </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium mb-2">Subtasks (Optional)</label>
-                        <div class="flex space-x-2">
-                            <input id="subtaskInput" type="text" placeholder="e.g., Stretch for 10 min" class="flex-grow p-3 rounded-lg border theme-ring-focus focus:ring-2 transition-colors duration-200 input-bg app-border app-text" />
-                            <button id="add-subtask-btn" type="button" class="p-3 theme-bg text-white rounded-lg hover:opacity-90 transition-colors duration-200 flex items-center justify-center" aria-label="Add subtask">
-                               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                );
+            }
+            return (
+                <div className="max-w-3xl mx-auto mt-12 p-6 border-2 border-dashed rounded-xl app-border transition-colors">
+                    <figure>
+                        <blockquote className="text-center text-lg italic theme-text">
+                            "{quote.quote}"
+                        </blockquote>
+                        <figcaption className="text-center text-sm text-gray-400 mt-2">
+                            &mdash; {quote.author}
+                        </figcaption>
+                    </figure>
+                </div>
+            );
+        };
+
+        const Notification = ({ notification, onDismiss }) => {
+            useEffect(() => {
+                const timer = setTimeout(() => {
+                    onDismiss(notification.id);
+                }, 3000); // Set timeout to 3 seconds for better UX
+                return () => clearTimeout(timer);
+            }, [notification.id, onDismiss]);
+
+            let icon;
+            switch (notification.type) {
+                case 'success':
+                    icon = <CheckCircleIcon className="w-5 h-5 text-green-400" />;
+                    break;
+                case 'error':
+                    icon = <XCircleIcon className="w-5 h-5 text-red-400" />;
+                    break;
+                case 'info':
+                default:
+                    icon = <InfoIcon className="w-5 h-5 text-blue-400" />;
+                    break;
+            }
+
+            return (
+                <div className="p-3 mb-2 rounded-xl shadow-xl border-2 border-gray-500/50 text-white flex items-start w-72 pointer-events-auto animate-fade-in-right bg-black/50 backdrop-blur-sm">
+                    <div className="mr-3 flex-shrink-0">{icon}</div>
+                    <div className="flex-grow text-sm">{notification.message}</div>
+                </div>
+            );
+        };
+
+        const NotificationArea = ({ notifications, onDismiss }) => {
+            return (
+                <div className="fixed top-0 right-0 p-4 z-[100] pointer-events-none">
+                    {notifications.map(notification => (
+                        <Notification key={notification.id} notification={notification} onDismiss={onDismiss} />
+                    ))}
+                </div>
+            );
+        };
+
+        const HistoryModal = ({ isOpen, onClose, historyData, onViewDay }) => {
+            const getLocalTodayKey = () => {
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+            
+            const [currentDate, setCurrentDate] = useState(new Date());
+            const [selectedDateKey, setSelectedDateKey] = useState(getLocalTodayKey());
+
+            useEffect(() => {
+                if (isOpen) {
+                    setCurrentDate(new Date());
+                    setSelectedDateKey(getLocalTodayKey());
+                }
+            }, [isOpen]);
+
+            const changeMonth = (delta) => {
+                setCurrentDate(prev => {
+                    const newDate = new Date(prev);
+                    newDate.setMonth(newDate.getMonth() + delta);
+                    return newDate;
+                });
+            };
+
+            const renderCalendar = () => {
+                const year = currentDate.getFullYear();
+                const month = currentDate.getMonth();
+                const firstDayOfMonth = new Date(year, month, 1).getDay();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                const todayKey = getLocalTodayKey();
+                const days = [];
+                for (let i = 0; i < firstDayOfMonth; i++) {
+                    days.push(<div key={`empty-${i}`}></div>);
+                }
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const hasHistory = historyData[dateKey] && historyData[dateKey].length > 0;
+                    const isToday = dateKey === todayKey;
+                    const isSelected = dateKey === selectedDateKey;
+                    days.push(
+                        <button key={dateKey} onClick={() => setSelectedDateKey(dateKey)} className={`relative p-2 rounded-lg text-sm transition duration-150 flex items-center justify-center flex-col card-hover ${isToday ? 'theme-border border-2' : ''} ${isSelected ? 'ring-2 ring-offset-2 ring-offset-slate-800 theme-ring-focus' : ''}`}>
+                            {day}
+                            {hasHistory && <span className="w-1.5 h-1.5 rounded-full absolute bottom-1.5 theme-bg"></span>}
+                        </button>
+                    );
+                }
+                return days;
+            };
+
+            const selectedHistoryCount = selectedDateKey ? (historyData[selectedDateKey] || []).length : 0;
+            
+            return (
+                <div className={`modal fixed inset-0 z-50 flex items-center justify-center bg-black/70 ${isOpen ? 'modal-active' : 'modal-inactive'}`} onClick={onClose}>
+                    <div className={`p-6 w-full max-w-lg rounded-2xl shadow-2xl transform transition duration-300 ${isOpen ? 'modal-card-active opacity-100' : 'modal-card-inactive opacity-0'} card-bg`} onClick={e => e.stopPropagation()}>
+                        <div className="flex justify-between items-center mb-4 border-b pb-3 app-border">
+                            <h2 className="text-2xl font-bold theme-text">Task History</h2>
+                            <button onClick={onClose} className="p-1 rounded-full text-gray-300 transition" aria-label="Close history modal">
+                                <XIcon className="w-5 h-5" />
                             </button>
                         </div>
+                        <div className="flex justify-between items-center mb-4 text-center">
+                            <button onClick={() => changeMonth(-1)} className="p-2 rounded-lg transition theme-text" aria-label="Previous month">&lt;</button>
+                            <h3 className="text-xl font-semibold">{currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}</h3>
+                            <button onClick={() => changeMonth(1)} className="p-2 rounded-lg transition theme-text" aria-label="Next month">&gt;</button>
+                        </div>
+                        <div className="calendar-grid text-center text-sm font-medium mb-2 text-gray-400">
+                            <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+                        </div>
+                        <div className="calendar-grid">{renderCalendar()}</div>
+                        <div className="mt-6 pt-4 border-t app-border min-h-[80px]">
+                            {selectedDateKey && (
+                                <div className="flex justify-between items-center">
+                                    <div>
+                                        <h4 className="text-xl font-semibold theme-text">{`Entries for ${selectedDateKey}`}</h4>
+                                        <p className="text-sm text-gray-400">{selectedHistoryCount} task(s) logged on this day.</p>
+                                    </div>
+                                    <button onClick={() => onViewDay(selectedDateKey)} className="px-4 py-2 text-base font-semibold rounded-lg theme-bg text-white hover:opacity-90 transition shadow-md">
+                                        View Day &rarr;
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     </div>
-                    <div id="subtasks-list" class="mb-4 max-h-40 overflow-y-auto pr-2 space-y-2"></div>
-                    <button type="submit" id="task-form-submit-btn" class="w-full py-3 mt-4 font-semibold rounded-xl transition duration-300 theme-bg hover:opacity-90 text-white shadow-lg">Save Task</button>
-                    <p id="task-modal-date-label" class="text-xs text-center text-gray-400 mt-2"></p>
-                </form>
-            </div>
-        </div>
+                </div>
+            );
+        };
 
-        <!-- History Modal -->
-        <div id="history-modal" class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/70 modal-inactive">
-            <div class="modal-card p-6 w-full max-w-lg rounded-2xl shadow-2xl transform transition duration-300 modal-card-inactive opacity-0 card-bg">
-                <div class="flex justify-between items-center mb-4 border-b pb-3 app-border">
-                    <h2 class="text-2xl font-bold theme-text">Task History</h2>
-                    <button id="history-modal-close-btn" class="p-1 rounded-full text-gray-300 transition" aria-label="Close history modal">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+        const TaskModal = ({ isOpen, onClose, onSave, editingHistoryLog, dateKey, isAddingUnavoidable }) => {
+            const [title, setTitle] = useState('');
+            const [subtaskInput, setSubtaskInput] = useState('');
+            const [subtasks, setSubtasks] = useState([]);
+            
+            useEffect(() => {
+                if (isOpen) {
+                    const currentItem = editingHistoryLog?.log;
+                    setTitle(currentItem?.title || '');
+                    setSubtasks(currentItem ? JSON.parse(JSON.stringify(currentItem.subtasks)) : []);
+                } else {
+                    setTitle('');
+                    setSubtaskInput('');
+                    setSubtasks([]);
+                }
+            }, [isOpen, editingHistoryLog]);
+
+            const handleAddSubtask = () => {
+                if (subtaskInput.trim()) {
+                    setSubtasks([...subtasks, { description: subtaskInput.trim(), completed: false }]);
+                    setSubtaskInput('');
+                }
+            };
+
+            const handleRemoveSubtask = (index) => {
+                setSubtasks(subtasks.filter((_, i) => i !== index));
+            };
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (!title.trim()) return;
+                let finalSubtasks = [...subtasks];
+                if (subtaskInput.trim()) {
+                    finalSubtasks.push({ description: subtaskInput.trim(), completed: false });
+                }
+                const id = editingHistoryLog?.log.id;
+                onSave({ id, title, subtasks: finalSubtasks });
+            };
+
+            const isEditing = !!editingHistoryLog;
+            let modalTitle = 'Add New Daily Task';
+            if (isAddingUnavoidable) {
+                modalTitle = isEditing ? "Edit Unavoidable Task" : "Add Unavoidable Task";
+            } else if (isEditing) {
+                modalTitle = 'Edit Daily Task'
+            }
+
+            return (
+                <div className={`modal fixed inset-0 z-50 flex items-center justify-center bg-black/70 ${isOpen ? 'modal-active' : 'modal-inactive'}`} onClick={onClose}>
+                    <div className={`p-6 w-full max-w-md rounded-2xl shadow-2xl transform transition duration-300 ${isOpen ? 'modal-card-active opacity-100' : 'modal-card-inactive opacity-0'} card-bg`} onClick={(e) => e.stopPropagation()}>
+                        <div className="flex justify-between items-center mb-4 border-b pb-3 app-border">
+                            <h2 className="text-2xl font-bold theme-text">{modalTitle}</h2>
+                            <button onClick={onClose} className="p-1 rounded-full text-gray-300 transition" aria-label="Close modal"><XIcon className="w-5 h-5" /></button>
+                        </div>
+                        <form onSubmit={handleSubmit}>
+                            <div className="mb-4">
+                                <label htmlFor="taskTitle" className="block text-sm font-medium mb-1">Task Title <span className="text-red-500">*</span></label>
+                                <input id="taskTitle" type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Complete Morning Run" className="w-full p-3 rounded-lg border theme-ring-focus focus:ring-2 transition-colors duration-200 input-bg app-border app-text" required />
+                            </div>
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium mb-2">Subtasks (Optional)</label>
+                                <div className="flex space-x-2">
+                                    <input id="subtaskInput" type="text" value={subtaskInput} onChange={(e) => setSubtaskInput(e.target.value)} placeholder="e.g., Stretch for 10 min" className="flex-grow p-3 rounded-lg border theme-ring-focus focus:ring-2 transition-colors duration-200 input-bg app-border app-text" />
+                                    <button type="button" onClick={handleAddSubtask} className="p-3 theme-bg text-white rounded-lg hover:opacity-90 transition-colors duration-200 flex items-center justify-center" aria-label="Add subtask"><PlusIcon className="w-5 h-5" /></button>
+                                </div>
+                            </div>
+                            {subtasks.length > 0 && (
+                                <div className="mb-4 max-h-40 overflow-y-auto pr-2 space-y-2">
+                                    <p className="text-xs theme-text mb-1">Subtasks:</p>
+                                    {subtasks.map((st, index) => (
+                                        <div key={index} className="flex justify-between items-center p-2 rounded-lg card-hover">
+                                            <span className={`text-sm ${st.completed ? 'line-through opacity-70' : ''}`}>{st.description}</span>
+                                            <button type="button" onClick={() => handleRemoveSubtask(index)} className="text-red-400 hover:text-red-500 p-1 rounded-full hover:bg-red-900/10 transition" aria-label="Remove subtask"><XIcon className="w-4 h-4" /></button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            <button type="submit" className="w-full py-3 mt-4 font-semibold rounded-xl transition duration-300 theme-bg hover:opacity-90 text-white shadow-lg">{isEditing ? 'Update Task' : 'Save Task'}</button>
+                            <p className="text-xs text-center text-gray-400 mt-2">Applying changes for: <span className="font-bold">{dateKey}</span></p>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+        
+        const BottomNav = ({ onOpenMenu, onOpenTaskModal }) => {
+            return (
+                <div className="fixed bottom-0 left-0 right-0 z-30 flex justify-between p-4 pointer-events-none">
+                    <button onClick={onOpenMenu} className="w-14 h-14 rounded-full pointer-events-auto shadow-2xl flex items-center justify-center transform hover:scale-110 transition duration-300 focus:outline-none theme-bg text-white" aria-label="Open menu">
+                        <MenuIcon className="w-6 h-6" />
+                    </button>
+                    <button onClick={onOpenTaskModal} className="w-14 h-14 rounded-full pointer-events-auto shadow-2xl flex items-center justify-center transform hover:scale-110 transition duration-300 focus:outline-none theme-bg text-white" aria-label="Add new task">
+                        <PlusIcon className="w-[30px] h-[30px]" />
                     </button>
                 </div>
-                <div class="flex justify-between items-center mb-4 text-center">
-                    <button id="prev-month-btn" class="p-2 rounded-lg transition theme-text" aria-label="Previous month">&lt;</button>
-                    <h3 id="calendar-month-year" class="text-xl font-semibold"></h3>
-                    <button id="next-month-btn" class="p-2 rounded-lg transition theme-text" aria-label="Next month">&gt;</button>
-                </div>
-                <div class="calendar-grid text-center text-sm font-medium mb-2 text-gray-400">
-                    <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
-                </div>
-                <div id="calendar-grid-container" class="calendar-grid"></div>
-                <div id="history-day-details" class="mt-6 pt-4 border-t app-border min-h-[80px]"></div>
-            </div>
-        </div>
-        
-        <!-- Notification Area -->
-        <div id="notification-area" class="fixed top-0 right-0 p-4 z-[100] pointer-events-none"></div>
-    </div>
-
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('sw.js')
-            .then(registration => console.log('ServiceWorker registration successful.'))
-            .catch(err => console.log('ServiceWorker registration failed: ', err));
-        });
-      }
-    </script>
-    
-    <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        // --- CONSTANTS ---
-        const HISTORY_KEY = 'journey_history_v2';
-        const THEME_KEY = 'journey_custom_theme';
-        const QUOTE_KEY = 'journey_daily_quote';
-        const QUOTE_INDEX_KEY = 'journey_quote_index';
-        const COLOR_PALETTE = ['#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef', '#ec4899'];
-        const LOCAL_QUOTES = [
-            { quote: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
-            { quote: "The journey of a thousand miles begins with a single step.", author: "Lao Tzu" },
-            { quote: "Believe you can and you're halfway there.", author: "Theodore Roosevelt" },
-            { quote: "Success is not final, failure is not fatal: it is the courage to continue that counts.", author: "Winston Churchill" },
-            { quote: "It does not matter how slowly you go as long as you do not stop.", author: "Confucius" }
-        ];
-        const DEFAULT_THEME = {
-            background: '#0f172a', text: '#f1f5f9', primary: '#6366f1', 
-            card: '#1e293b', cardHover: '#334155', border: '#334155', input: '#0f172a'
-        };
-        const ICONS = {
-            check: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="check-icon text-white w-4 h-4"><polyline points="20 6 9 17 4 12"/></svg>',
-            edit: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-[18px] h-[18px]"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>',
-            trash: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-[18px] h-[18px]"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>',
-            plus: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
-            x: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>',
-            chevronDown: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 theme-text transition-transform duration-300"><path d="m6 9 6 6 6-6"/></svg>',
-            compass: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-4 theme-text w-9 h-9"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>',
-            notification: {
-                success: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-green-400"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>',
-                error: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-red-400"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
-                info: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-blue-400"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>'
-            }
+            );
         };
 
-        // --- STATE ---
-        let state = {
-            taskHistory: {},
-            customTheme: DEFAULT_THEME,
-            viewingDate: null, // null for today
-            isUnavoidableOpen: true,
-            editingTask: null, // { dateKey, task, isUnavoidable }
-            isAddingUnavoidable: false,
-            calendarDate: new Date(),
-            calendarSelectedKey: getTodayKey(),
-        };
-
-        // --- DOM ELEMENTS ---
-        const DOMElements = {
-            sidebar: document.getElementById('sidebar'),
-            sidebarOverlay: document.getElementById('sidebar-overlay'),
-            openMenuBtn: document.getElementById('open-menu-btn'),
-            sidebarCloseBtn: document.getElementById('sidebar-close-btn'),
-            openHistoryBtn: document.getElementById('open-history-btn'),
-            headerContainer: document.getElementById('header-container'),
-            taskListContainer: document.getElementById('task-list-container'),
-            quoteContainer: document.getElementById('quote-container'),
-            returnToTodayContainer: document.getElementById('return-to-today-container'),
-            returnToTodayBtn: document.getElementById('return-to-today-btn'),
-            addDailyTaskBtn: document.getElementById('add-daily-task-btn'),
-            taskModal: document.getElementById('task-modal'),
-            taskModalCard: document.querySelector('#task-modal .modal-card'),
-            taskModalCloseBtn: document.getElementById('task-modal-close-btn'),
-            taskForm: document.getElementById('task-form'),
-            taskModalTitle: document.getElementById('task-modal-title'),
-            taskTitleInput: document.getElementById('taskTitle'),
-            subtaskInput: document.getElementById('subtaskInput'),
-            addSubtaskBtn: document.getElementById('add-subtask-btn'),
-            subtasksList: document.getElementById('subtasks-list'),
-            taskFormSubmitBtn: document.getElementById('task-form-submit-btn'),
-            taskModalDateLabel: document.getElementById('task-modal-date-label'),
-            historyModal: document.getElementById('history-modal'),
-            historyModalCard: document.querySelector('#history-modal .modal-card'),
-            historyModalCloseBtn: document.getElementById('history-modal-close-btn'),
-            prevMonthBtn: document.getElementById('prev-month-btn'),
-            nextMonthBtn: document.getElementById('next-month-btn'),
-            calendarMonthYear: document.getElementById('calendar-month-year'),
-            calendarGrid: document.getElementById('calendar-grid-container'),
-            historyDayDetails: document.getElementById('history-day-details'),
-            notificationArea: document.getElementById('notification-area'),
-            themeInputsContainer: document.getElementById('theme-inputs'),
-            resetThemeBtn: document.getElementById('reset-theme-btn'),
-            exportDataBtn: document.getElementById('export-data-btn'),
-            importDataBtn: document.getElementById('import-data-btn'),
-            importFileInput: document.getElementById('import-file-input'),
-        };
-
-        // --- AUDIO ---
-        let audioInitialized = false;
-        let synth, polySynth;
-        const initAudio = () => {
-            if (audioInitialized || typeof Tone === 'undefined') return;
-            try {
-                if (Tone.context.state !== 'running') Tone.start();
-                synth = new Tone.Synth({ oscillator: { type: "sine" }, envelope: { attack: 0.005, decay: 0.1, sustain: 0, release: 0.1 } }).toDestination();
-                polySynth = new Tone.PolySynth(Tone.Synth, { oscillator: { type: "triangle" }, envelope: { attack: 0.01, decay: 0.4, sustain: 0.05, release: 0.5 } }).toDestination();
-                audioInitialized = true;
-            } catch (e) { console.error("Audio initialization failed:", e); }
-        };
-        const playTock = () => { if (audioInitialized && synth) synth.triggerAttackRelease("C5", "8n"); };
-        const playChime = () => { if (audioInitialized && polySynth) polySynth.triggerAttackRelease(["E5", "G5", "C6"], "4n"); };
-        const playWhoosh = () => { if (audioInitialized && polySynth) polySynth.triggerAttackRelease(["C3", "C2"], "8n"); };
-
-        // --- UTILS ---
-        const generateId = () => `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-        const getTodayKey = () => new Date().toISOString().split('T')[0];
-        const formatDate = (dateString) => {
-            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            const date = dateString ? new Date(dateString.replace(/-/g, '/')) : new Date();
-            return date.toLocaleString(undefined, options);
-        };
         const lightenColor = (hex, percent) => {
-            if (!hex || hex.length < 7) return '#334155';
+            if (!hex || hex.length < 7) return '#cccccc'; // Fallback color
             try {
                 let r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
                 const p = percent / 100;
                 r = Math.round(Math.min(255, r + (255 - r) * p));
                 g = Math.round(Math.min(255, g + (255 - g) * p));
                 b = Math.round(Math.min(255, b + (255 - b) * p));
-                return "#" + r.toString(16).padStart(2, '0') + g.toString(16).padStart(2, '0') + b.toString(16).padStart(2, '0');
-            } catch (e) { return '#334155'; }
+                return "#" + (r).toString(16).padStart(2, '0') + (g).toString(16).padStart(2, '0') + (b).toString(16).padStart(2, '0');
+            } catch(e) { return '#cccccc'; }
         };
 
-        // --- NOTIFICATIONS ---
-        let notificationCounter = 0;
-        const showNotification = (message, type = 'info') => {
-            notificationCounter++;
-            const id = notificationCounter;
-            const notificationEl = document.createElement('div');
-            notificationEl.className = `p-3 mb-2 rounded-xl shadow-xl border-2 border-gray-500/50 text-white flex items-start w-72 pointer-events-auto animate-fade-in-right bg-black/50 backdrop-blur-sm`;
-            notificationEl.innerHTML = `
-                <div class="mr-3 flex-shrink-0">${ICONS.notification[type]}</div>
-                <div class="flex-grow text-sm">${message}</div>
-            `;
-            DOMElements.notificationArea.appendChild(notificationEl);
-            setTimeout(() => notificationEl.remove(), 3000);
-        };
-
-        // --- DATA PERSISTENCE ---
-        const saveToStorage = (key, data) => {
-            try {
-                localStorage.setItem(key, JSON.stringify(data));
-            } catch (error) { showNotification(`Error saving ${key}.`, 'error'); }
-        };
-
-        // --- THEME ---
-        const applyTheme = (theme) => {
-            const root = document.documentElement;
-            root.style.setProperty('--app-bg', theme.background);
-            root.style.setProperty('--app-text', theme.text);
-            root.style.setProperty('--app-primary', theme.primary);
-            root.style.setProperty('--app-card-bg', theme.card);
-            root.style.setProperty('--app-card-hover-bg', theme.cardHover);
-            root.style.setProperty('--app-border', theme.border);
-            root.style.setProperty('--app-input-bg', theme.input);
-        };
-        const renderThemeInputs = () => {
-            DOMElements.themeInputsContainer.innerHTML = '';
-            Object.entries({
-                'Background': 'background', 'Card': 'card', 'Text': 'text', 'Primary': 'primary'
-            }).forEach(([label, key]) => {
-                const div = document.createElement('div');
-                div.className = 'flex items-center justify-between';
-                div.innerHTML = `
-                    <label class="text-sm font-medium">${label}</label>
-                    <input type="color" value="${state.customTheme[key]}" data-theme-key="${key}" class="w-8 h-8 p-0 border-none rounded cursor-pointer bg-transparent" />
-                `;
-                DOMElements.themeInputsContainer.appendChild(div);
-            });
-        };
-        const handleThemeChange = (key, value) => {
-            state.customTheme = { ...state.customTheme, [key]: value };
-            applyTheme(state.customTheme);
-            saveToStorage(THEME_KEY, state.customTheme);
-        };
-
-        // --- RENDER FUNCTIONS ---
-        const renderHeader = () => {
-            const currentDayKey = state.viewingDate || getTodayKey();
-            const tasks = state.taskHistory[currentDayKey] || [];
-            let total = 0, completed = 0;
-            tasks.forEach(task => {
-                if (task.subtasks.length > 0) {
-                    total += task.subtasks.length;
-                    completed += task.subtasks.filter(st => st.completed).length;
-                } else {
-                    total++;
-                    if (task.completed) completed++;
-                }
-            });
-            const percentage = total > 0 ? (completed / total) * 100 : 0;
-            const trackColor = lightenColor(state.customTheme.primary, 80);
-
-            DOMElements.headerContainer.innerHTML = `
-                <h1 class="text-6xl font-extrabold tracking-tight cursive-title mb-2">The Journey</h1>
-                <p class="text-lg font-medium mb-4 text-gray-400">${formatDate(state.viewingDate)}</p>
-                <div class="w-full max-w-3xl mt-4 rounded-full h-3" style="background-color: ${trackColor};">
-                    <div class="progress-bar h-3 rounded-full theme-bg" style="width: ${percentage}%;"></div>
-                </div>
-                <p class="text-sm mt-1 text-gray-400">${completed} of ${total} steps complete (${percentage.toFixed(0)}%)</p>
-            `;
-        };
-
-        const renderTaskList = () => {
-            const currentDayKey = state.viewingDate || getTodayKey();
-            const dailyTasks = state.taskHistory[currentDayKey] || [];
-            const unavoidableTasks = dailyTasks.filter(t => t.isUnavoidable);
-            const regularTasks = dailyTasks.filter(t => !t.isUnavoidable);
-
-            const createTaskItemHTML = (task) => {
-                const isCompleted = task.subtasks.length > 0 ? task.subtasks.every(st => st.completed) : !!task.completed;
-                const taskColor = task.color || '#6366f1';
-                const subtaskColor = lightenColor(taskColor, 40);
-
-                let subtasksHTML = '';
-                if (task.subtasks.length > 0) {
-                    subtasksHTML = `
-                        <ul class="pt-2 pl-2 border-l border-dashed app-border space-y-2 mt-2">
-                            ${task.subtasks.map((st, index) => `
-                                <li class="flex items-start text-sm text-gray-300">
-                                    <button data-action="toggle" data-task-id="${task.id}" data-subtask-index="${index}" class="flex-shrink-0 mr-3 mt-0.5 rounded-md w-5 h-5 border-2 flex items-center justify-center transition duration-200 custom-checkbox ${st.completed ? 'checked' : ''}" style="border-color: ${subtaskColor}; background-color: ${st.completed ? subtaskColor : 'transparent'};">
-                                        <div class="w-3 h-3">${ICONS.check.replace('w-4 h-4', 'w-3 h-3')}</div>
+        const TaskItem = ({ task, onToggle, onEdit, onDelete }) => {
+            const isCompleted = task.subtasks.length > 0 ? task.subtasks.every(st => st.completed) : !!task.completed;
+            const taskColor = task.color || '#6366f1';
+            const subtaskColor = task.color ? lightenColor(task.color, 40) : '#10b981';
+            return (
+                <div className={`task-card p-4 mb-4 rounded-xl shadow-lg transition duration-300 card-bg card-hover ${isCompleted ? 'opacity-70' : ''}`}>
+                    <div className="flex items-start mb-2 group">
+                        <button onClick={() => onToggle(task.id)} className={`flex-shrink-0 mr-3 mt-1 rounded-lg w-6 h-6 border-2 flex items-center justify-center transition duration-200 custom-checkbox ${isCompleted ? 'checked' : ''}`} style={{ borderColor: taskColor, backgroundColor: isCompleted ? taskColor : 'transparent' }} aria-label={`Mark task as ${isCompleted ? 'incomplete' : 'complete'}`}>
+                            <CheckIcon className="check-icon text-white w-4 h-4" strokeWidth={3} />
+                        </button>
+                        <h3 className={`font-extrabold text-xl flex-grow ${isCompleted && task.subtasks.length === 0 ? 'line-through' : ''}`} style={{ color: taskColor }}>{task.title}</h3>
+                        <button onClick={() => onEdit(task.id)} className="text-gray-400 p-1 rounded-full opacity-0 group-hover:opacity-100 transition duration-300 hover:text-yellow-500 ml-2" aria-label="Edit Task"><EditIcon className="w-[18px] h-[18px]" /></button>
+                        <button onClick={() => onDelete(task.id)} className="text-gray-400 p-1 rounded-full opacity-0 group-hover:opacity-100 transition duration-300 hover:text-red-500 ml-2" aria-label="Delete Task"><TrashIcon className="w-[18px] h-[18px]" /></button>
+                    </div>
+                    {task.subtasks.length > 0 && (
+                        <ul className="pt-2 pl-2 border-l border-dashed app-border space-y-2 mt-2">
+                            {task.subtasks.map((subtask, index) => (
+                                <li key={index} className="flex items-start text-sm text-gray-300">
+                                    <button onClick={() => onToggle(task.id, index)} className={`flex-shrink-0 mr-3 mt-0.5 rounded-md w-5 h-5 border-2 flex items-center justify-center transition duration-200 custom-checkbox ${subtask.completed ? 'checked' : ''}`} style={{ borderColor: subtaskColor, backgroundColor: subtask.completed ? subtaskColor : 'transparent' }} aria-label={`Mark subtask as ${subtask.completed ? 'incomplete' : 'complete'}`}>
+                                        <CheckIcon className="check-icon text-white w-3 h-3" strokeWidth={3} />
                                     </button>
-                                    <span class="flex-grow transition duration-200 ${st.completed ? 'line-through opacity-60' : ''}">${st.description}</span>
+                                    <span className={`flex-grow transition duration-200 ${subtask.completed ? 'line-through opacity-60' : ''}`}>{subtask.description}</span>
                                 </li>
-                            `).join('')}
+                            ))}
                         </ul>
-                    `;
-                }
+                    )}
+                </div>
+            );
+        };
 
-                return `
-                    <div class="task-card p-4 mb-4 rounded-xl shadow-lg transition duration-300 card-bg card-hover ${isCompleted ? 'opacity-70' : ''}" data-task-id="${task.id}">
-                        <div class="flex items-start mb-2 group">
-                            <button data-action="toggle" data-task-id="${task.id}" class="flex-shrink-0 mr-3 mt-1 rounded-lg w-6 h-6 border-2 flex items-center justify-center transition duration-200 custom-checkbox ${isCompleted ? 'checked' : ''}" style="border-color: ${taskColor}; background-color: ${isCompleted ? taskColor : 'transparent'};">
-                                ${ICONS.check}
-                            </button>
-                            <h3 class="font-extrabold text-xl flex-grow ${isCompleted && task.subtasks.length === 0 ? 'line-through' : ''}" style="color: ${taskColor};">${task.title}</h3>
-                            <button data-action="edit" data-task-id="${task.id}" class="text-gray-400 p-1 rounded-full opacity-0 group-hover:opacity-100 transition duration-300 hover:text-yellow-500 ml-2">${ICONS.edit}</button>
-                            <button data-action="delete" data-task-id="${task.id}" class="text-gray-400 p-1 rounded-full opacity-0 group-hover:opacity-100 transition duration-300 hover:text-red-500 ml-2">${ICONS.trash}</button>
+        const TaskList = (props) => {
+            const { dailyTasks, dateKey, isUnavoidableOpen, onToggleUnavoidable, onAddTask, onToggleTask, onEditTask, onDeleteTask } = props;
+            const unavoidableTasks = dailyTasks.filter(task => task.isUnavoidable);
+            const regularTasks = dailyTasks.filter(task => !task.isUnavoidable);
+            return (
+                <div className="max-w-3xl mx-auto mt-8">
+                    <div className="mb-6 app-border border-b-2 pb-4">
+                        <div className="flex justify-between items-center cursor-pointer" onClick={onToggleUnavoidable}>
+                            <h2 className="text-lg font-bold theme-text">Unavoidable Tasks</h2>
+                            <div className="flex items-center space-x-2">
+                                <button onClick={(e) => { e.stopPropagation(); onAddTask(true); }} className="p-1 rounded-full theme-bg text-white hover:opacity-80 transition" aria-label="Add Unavoidable Task"><PlusIcon className="w-5 h-5" /></button>
+                                <ChevronDownIcon className={`w-6 h-6 theme-text transition-transform duration-300 ${isUnavoidableOpen ? 'rotate-180' : ''}`} />
+                            </div>
                         </div>
-                        ${subtasksHTML}
+                        {isUnavoidableOpen && (
+                            <div className="mt-4">
+                                {unavoidableTasks.length > 0 
+                                    ? unavoidableTasks.map((task) => (<TaskItem key={task.id} task={task} onToggle={(id, subIdx) => onToggleTask(dateKey, id, subIdx)} onEdit={() => onEditTask(dateKey, task)} onDelete={(id) => onDeleteTask(dateKey, id)} />))
+                                    : <p className="text-sm text-gray-400">No unavoidable tasks added for this day.</p>
+                                }
+                            </div>
+                        )}
                     </div>
-                `;
+                    <h2 className="text-lg font-bold theme-text mb-4">Daily Tasks</h2>
+                    {regularTasks.length === 0 && unavoidableTasks.length === 0 ? (
+                        <div className={`text-center py-16 px-4 rounded-xl border-4 border-dashed app-border text-gray-400`}>
+                            <CompassIcon className="mx-auto mb-4 theme-text w-9 h-9" />
+                            <p className="text-xl font-semibold">Start your Journey!</p>
+                            <p>Click the '+' button to add your first daily Task.</p>
+                        </div>
+                    ) : (
+                        regularTasks.map((task) => (<TaskItem key={task.id} task={task} onToggle={(id, subIdx) => onToggleTask(dateKey, id, subIdx)} onEdit={() => onEditTask(dateKey, task)} onDelete={(id) => onDeleteTask(dateKey, id)} />))
+                    )}
+                </div>
+            );
+        };
+
+        const Header = ({ tasks, viewingDate, customTheme }) => {
+            const formatDate = (dateString) => {
+                const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                const date = dateString ? new Date(dateString.replace(/-/g, '/')) : new Date();
+                return date.toLocaleString(undefined, options);
             };
 
-            const unavoidableHTML = `
-                <div class="mb-6 app-border border-b-2 pb-4">
-                    <div class="flex justify-between items-center cursor-pointer" data-action="toggle-unavoidable">
-                        <h2 class="text-lg font-bold theme-text">Unavoidable Tasks</h2>
-                        <div class="flex items-center space-x-2">
-                            <button data-action="add-unavoidable" class="p-1 rounded-full theme-bg text-white hover:opacity-80 transition">${ICONS.plus}</button>
-                            <div class="chevron-container ${state.isUnavoidableOpen ? 'rotate-180' : ''}">${ICONS.chevronDown}</div>
-                        </div>
-                    </div>
-                    ${state.isUnavoidableOpen ? `
-                        <div class="mt-4">
-                            ${unavoidableTasks.length > 0 ? unavoidableTasks.map(createTaskItemHTML).join('') : '<p class="text-sm text-gray-400">No unavoidable tasks added for this day.</p>'}
-                        </div>
-                    ` : ''}
-                </div>
-            `;
-            
-            const regularHTML = `
-                <h2 class="text-lg font-bold theme-text mb-4">Daily Tasks</h2>
-                ${regularTasks.length > 0 ? regularTasks.map(createTaskItemHTML).join('') : ''}
-            `;
-
-            const emptyStateHTML = `
-                <div class="text-center py-16 px-4 rounded-xl border-4 border-dashed app-border text-gray-400">
-                    ${ICONS.compass}
-                    <p class="text-xl font-semibold">Start your Journey!</p>
-                    <p>Click the '+' button to add your first daily Task.</p>
-                </div>
-            `;
-
-            DOMElements.taskListContainer.innerHTML = unavoidableHTML + (dailyTasks.length === 0 ? emptyStateHTML : regularHTML);
-        };
-
-        const renderQuote = (quoteData) => {
-            DOMElements.quoteContainer.style.display = state.viewingDate ? 'none' : 'block';
-            if (!quoteData) {
-                DOMElements.quoteContainer.innerHTML = `<p class="text-center italic text-gray-400">Loading inspiration...</p>`;
-                return;
-            }
-            DOMElements.quoteContainer.innerHTML = `
-                <figure>
-                    <blockquote class="text-center text-lg italic theme-text">"${quoteData.quote}"</blockquote>
-                    <figcaption class="text-center text-sm text-gray-400 mt-2">&mdash; ${quoteData.author}</figcaption>
-                </figure>
-            `;
-        };
-
-        const renderHistoryCalendar = () => {
-            const year = state.calendarDate.getFullYear();
-            const month = state.calendarDate.getMonth();
-            DOMElements.calendarMonthYear.textContent = state.calendarDate.toLocaleString('default', { month: 'long', year: 'numeric' });
-            
-            const firstDayOfMonth = new Date(year, month, 1).getDay();
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            const todayKey = getTodayKey();
-            
-            DOMElements.calendarGrid.innerHTML = '';
-            for (let i = 0; i < firstDayOfMonth; i++) DOMElements.calendarGrid.append(document.createElement('div'));
-            
-            for (let day = 1; day <= daysInMonth; day++) {
-                const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                const hasHistory = state.taskHistory[dateKey] && state.taskHistory[dateKey].length > 0;
-                const isToday = dateKey === todayKey;
-                const isSelected = dateKey === state.calendarSelectedKey;
-                
-                const dayBtn = document.createElement('button');
-                dayBtn.className = `relative p-2 rounded-lg text-sm transition duration-150 flex items-center justify-center flex-col card-hover ${isToday ? 'theme-border border-2' : ''} ${isSelected ? 'ring-2 ring-offset-2 ring-offset-slate-800 theme-ring-focus' : ''}`;
-                dayBtn.textContent = day;
-                dayBtn.dataset.dateKey = dateKey;
-                if (hasHistory) {
-                    const dot = document.createElement('span');
-                    dot.className = 'w-1.5 h-1.5 rounded-full absolute bottom-1.5 theme-bg';
-                    dayBtn.appendChild(dot);
-                }
-                DOMElements.calendarGrid.appendChild(dayBtn);
-            }
-            renderHistoryDayDetails();
-        };
-
-        const renderHistoryDayDetails = () => {
-            const key = state.calendarSelectedKey;
-            const count = key ? (state.taskHistory[key] || []).length : 0;
-            DOMElements.historyDayDetails.innerHTML = key ? `
-                <div class="flex justify-between items-center">
-                    <div>
-                        <h4 class="text-xl font-semibold theme-text">Entries for ${key}</h4>
-                        <p class="text-sm text-gray-400">${count} task(s) logged on this day.</p>
-                    </div>
-                    <button data-date-key="${key}" data-action="view-day" class="px-4 py-2 text-base font-semibold rounded-lg theme-bg text-white hover:opacity-90 transition shadow-md">
-                        View Day &rarr;
-                    </button>
-                </div>
-            ` : '';
-        };
-
-        const updateUI = () => {
-            renderHeader();
-            renderTaskList();
-            DOMElements.returnToTodayContainer.style.display = state.viewingDate ? 'flex' : 'none';
-        };
-
-        // --- MODAL CONTROLS ---
-        const openModal = (modal, card) => {
-            modal.classList.remove('modal-inactive');
-            modal.classList.add('modal-active');
-            card.classList.remove('modal-card-inactive', 'opacity-0');
-            card.classList.add('modal-card-active', 'opacity-100');
-        };
-        const closeModal = (modal, card) => {
-            card.classList.remove('modal-card-active', 'opacity-100');
-            card.classList.add('modal-card-inactive', 'opacity-0');
-            modal.classList.remove('modal-active');
-            modal.classList.add('modal-inactive');
-        };
-        const openTaskModalToAdd = (isUnavoidable) => {
-            state.editingTask = null;
-            state.isAddingUnavoidable = isUnavoidable;
-            DOMElements.taskForm.reset();
-            DOMElements.subtasksList.innerHTML = '';
-            
-            DOMElements.taskModalTitle.textContent = isUnavoidable ? 'Add Unavoidable Task' : 'Add New Daily Task';
-            DOMElements.taskFormSubmitBtn.textContent = 'Save Task';
-            DOMElements.taskModalDateLabel.innerHTML = `Applying changes for: <span class="font-bold">${state.viewingDate || getTodayKey()}</span>`;
-            
-            openModal(DOMElements.taskModal, DOMElements.taskModalCard);
-        };
-        const openTaskModalToEdit = (dateKey, task) => {
-            state.editingTask = { dateKey, task, isUnavoidable: task.isUnavoidable };
-            state.isAddingUnavoidable = !!task.isUnavoidable;
-            DOMElements.taskForm.reset();
-            
-            DOMElements.taskTitleInput.value = task.title;
-            renderSubtaskListInModal(task.subtasks);
-
-            DOMElements.taskModalTitle.textContent = task.isUnavoidable ? 'Edit Unavoidable Task' : 'Edit Daily Task';
-            DOMElements.taskFormSubmitBtn.textContent = 'Update Task';
-            DOMElements.taskModalDateLabel.innerHTML = `Applying changes for: <span class="font-bold">${dateKey}</span>`;
-
-            openModal(DOMElements.taskModal, DOMElements.taskModalCard);
-        };
-        const renderSubtaskListInModal = (subtasks) => {
-            DOMElements.subtasksList.innerHTML = subtasks.length > 0 ? `<p class="text-xs theme-text mb-1">Subtasks:</p>` : '';
-            subtasks.forEach((st, index) => {
-                const subtaskEl = document.createElement('div');
-                subtaskEl.className = 'flex justify-between items-center p-2 rounded-lg card-hover';
-                subtaskEl.innerHTML = `
-                    <span class="text-sm ${st.completed ? 'line-through opacity-70' : ''}">${st.description}</span>
-                    <button type="button" data-subtask-index="${index}" class="text-red-400 hover:text-red-500 p-1 rounded-full hover:bg-red-900/10 transition">${ICONS.x}</button>
-                `;
-                DOMElements.subtasksList.appendChild(subtaskEl);
-            });
-        };
-
-        // --- CORE LOGIC ---
-        const handleSaveTask = (e) => {
-            e.preventDefault();
-            const title = DOMElements.taskTitleInput.value.trim();
-            if (!title) return;
-
-            const subtaskNodes = [...DOMElements.subtasksList.querySelectorAll('div > span')];
-            let subtasks = subtaskNodes.map(span => ({
-                description: span.textContent,
-                completed: span.classList.contains('line-through')
-            }));
-
-            const finalSubtaskInput = DOMElements.subtaskInput.value.trim();
-            if (finalSubtaskInput) {
-                subtasks.push({ description: finalSubtaskInput, completed: false });
-            }
-
-            const dateKey = state.viewingDate || getTodayKey();
-            const dateHistory = state.taskHistory[dateKey] ? [...state.taskHistory[dateKey]] : [];
-
-            if (state.editingTask) { // Update
-                const index = dateHistory.findIndex(t => t.id === state.editingTask.task.id);
-                if (index !== -1) {
-                    const updatedTask = { ...dateHistory[index], title, subtasks };
-                    updatedTask.completed = updatedTask.subtasks.length > 0 ? updatedTask.subtasks.every(st => st.completed) : updatedTask.completed;
-                    dateHistory[index] = updatedTask;
-                }
-            } else { // Add new
-                const totalHistoryItems = Object.values(state.taskHistory).flat().length;
-                const newTask = {
-                    id: generateId(), title, subtasks, completed: false,
-                    completedAt: new Date(dateKey.replace(/-/g, '/')).toISOString(),
-                    color: COLOR_PALETTE[totalHistoryItems % COLOR_PALETTE.length],
-                    isUnavoidable: state.isAddingUnavoidable
-                };
-                dateHistory.push(newTask);
-                playChime();
-            }
-            state.taskHistory[dateKey] = dateHistory;
-            saveToStorage(HISTORY_KEY, state.taskHistory);
-            closeModal(DOMElements.taskModal, DOMElements.taskModalCard);
-            updateUI();
-        };
-
-        const handleTaskAction = (e) => {
-            const target = e.target.closest('button[data-action]');
-            if (!target) return;
-            
-            const action = target.dataset.action;
-            const taskId = target.dataset.taskId;
-            const dateKey = state.viewingDate || getTodayKey();
-            const tasks = state.taskHistory[dateKey] || [];
-            
-            if (action === 'toggle') {
-                const subtaskIndex = target.dataset.subtaskIndex !== undefined ? parseInt(target.dataset.subtaskIndex) : undefined;
-                const taskIndex = tasks.findIndex(t => t.id === taskId);
-                if (taskIndex === -1) return;
-
-                const task = tasks[taskIndex];
-                const isMainTaskToggle = subtaskIndex === undefined;
-
-                if (!isMainTaskToggle && task.subtasks.length > 0) {
-                    task.subtasks[subtaskIndex].completed = !task.subtasks[subtaskIndex].completed;
-                    task.completed = task.subtasks.every(st => st.completed);
-                } else if (task.subtasks.length === 0) {
-                    task.completed = !task.completed;
-                } else {
-                    const targetCompletion = !task.completed;
-                    task.subtasks.forEach(st => st.completed = targetCompletion);
-                    task.completed = targetCompletion;
-                }
-                if (task.completed) playChime(); else playTock();
-            }
-            if (action === 'edit') {
-                const task = tasks.find(t => t.id === taskId);
-                if (task) openTaskModalToEdit(dateKey, task);
-                return; // Prevent UI update until modal is closed
-            }
-            if (action === 'delete') {
-                state.taskHistory[dateKey] = tasks.filter(t => t.id !== taskId);
-                playWhoosh();
-            }
-            saveToStorage(HISTORY_KEY, state.taskHistory);
-            updateUI();
-        };
-
-        const handleTaskListClick = (e) => {
-            const containerAction = e.target.closest('[data-action]');
-            if (!containerAction) return;
-
-            const action = containerAction.dataset.action;
-            if (action === 'toggle-unavoidable') {
-                state.isUnavoidableOpen = !state.isUnavoidableOpen;
-                renderTaskList();
-            } else if (action === 'add-unavoidable') {
-                e.stopPropagation();
-                openTaskModalToAdd(true);
-            } else {
-                handleTaskAction(e);
-            }
-        };
-
-        // --- DATA IMPORT/EXPORT ---
-        const exportData = () => {
-            const data = JSON.stringify({ history: state.taskHistory, customTheme: state.customTheme }, null, 2);
-            const blob = new Blob([data], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `the_journey_backup_${getTodayKey()}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-            showNotification('Data exported successfully!', 'success');
-        };
-        const importData = (event) => {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    const imported = JSON.parse(e.target.result);
-                    if (!imported.history) throw new Error("Invalid file format.");
-                    state.taskHistory = imported.history;
-                    if (imported.customTheme) {
-                        state.customTheme = imported.customTheme;
-                        applyTheme(state.customTheme);
-                        renderThemeInputs();
+            const { completedItems, totalItems, percentage } = useMemo(() => {
+                let total = 0, completed = 0;
+                tasks.forEach(task => {
+                    if (task.subtasks.length > 0) {
+                        total += task.subtasks.length;
+                        completed += task.subtasks.filter(st => st.completed).length;
+                    } else {
+                        total += 1;
+                        if (task.completed) completed += 1;
                     }
-                    saveToStorage(HISTORY_KEY, state.taskHistory);
-                    updateUI();
-                    showNotification('Data imported successfully!', 'success');
-                } catch (error) {
-                    showNotification(`Import failed: ${error.message}`, 'error');
-                } finally {
-                    event.target.value = '';
-                }
-            };
-            reader.readAsText(file);
+                });
+                return { completedItems: completed, totalItems: total, percentage: total > 0 ? (completed / total) * 100 : 0 };
+            }, [tasks]);
+
+            const trackColor = useMemo(() => lightenColor(customTheme.primary, 80), [customTheme.primary]);
+
+            return (
+                <header className="flex flex-col items-center py-4 relative">
+                    <h1 className="text-6xl font-extrabold tracking-tight cursive-title mb-2">The Journey</h1>
+                    <p className="text-lg font-medium mb-4 text-gray-400">{formatDate(viewingDate)}</p>
+                    <div className="w-full max-w-3xl mt-4 rounded-full h-3" style={{ backgroundColor: trackColor }}>
+                        <div className="progress-bar h-3 rounded-full theme-bg" style={{ width: `${percentage}%` }}></div>
+                    </div>
+                    <p className="text-sm mt-1 text-gray-400">{completedItems} of {totalItems} steps complete ({percentage.toFixed(0)}%)</p>
+                </header>
+            );
         };
 
-        // --- INITIALIZATION ---
-        const init = () => {
-            // Load Data
-            try {
-                const storedHistory = localStorage.getItem(HISTORY_KEY);
-                state.taskHistory = storedHistory ? JSON.parse(storedHistory) : {};
-                const storedTheme = localStorage.getItem(THEME_KEY);
-                state.customTheme = storedTheme ? JSON.parse(storedTheme) : DEFAULT_THEME;
-            } catch (e) {
-                showNotification('Error loading data from storage.', 'error');
-            }
+        const ColorInput = ({ label, value, onChange }) => (
+            <div className="flex items-center justify-between">
+                <label className="text-sm font-medium">{label}</label>
+                <input type="color" value={value} onChange={onChange} className="w-8 h-8 p-0 border-none rounded cursor-pointer bg-transparent" />
+            </div>
+        );
 
-            applyTheme(state.customTheme);
-            renderThemeInputs();
+        const Sidebar = (props) => {
+            const { isOpen, onClose, customTheme, onThemeChange, onThemeReset, onOpenHistory, onExport, onImportClick } = props;
+            const handleColorChange = (key, value) => onThemeChange({ ...customTheme, [key]: value });
+            return (
+                <div className={`sidebar card-bg fixed top-0 left-0 h-full w-64 z-40 shadow-2xl p-6 transition-transform duration-300 transform ${isOpen ? 'translate-x-0' : '-translate-x-full'} app-border border-r`}>
+                    <div className="flex justify-between items-center mb-8 app-border border-b pb-4">
+                        <h1 className="text-3xl font-bold theme-text">Settings</h1>
+                        <button onClick={onClose} className="p-2 rounded-full transition theme-text" aria-label="Close menu"><XIcon className="w-6 h-6" /></button>
+                    </div>
+                    <div className="space-y-6">
+                        <button onClick={onOpenHistory} className="w-full flex items-center justify-center p-3 rounded-xl transition-colors duration-200 theme-text theme-border/50 border card-hover">
+                            <CalendarIcon className="mr-2 w-5 h-5" />Task History
+                        </button>
+                        <div className="space-y-3 pt-4 app-border border-t">
+                            <p className="text-sm font-semibold theme-text border-b app-border/30 pb-2">Local Data Backup</p>
+                            <button onClick={onExport} className="w-full flex items-center justify-center p-3 rounded-xl transition-colors duration-200 theme-bg hover:opacity-90 text-white shadow-md">
+                                <DownloadIcon className="mr-2 w-5 h-5" />Export Data (JSON)
+                            </button>
+                            <button onClick={onImportClick} className="w-full flex items-center justify-center p-3 rounded-xl transition-colors duration-200 theme-text theme-border/50 border card-hover">
+                                <UploadIcon className="mr-2 w-5 h-5" />Import Data (JSON)
+                            </button>
+                        </div>
+                        <div className="space-y-3 pt-4 app-border border-t">
+                            <p className="text-sm font-semibold theme-text border-b app-border/30 pb-2">Theme Customization</p>
+                            <ColorInput label="Background" value={customTheme.background} onChange={(e) => handleColorChange('background', e.target.value)} />
+                            <ColorInput label="Card" value={customTheme.card} onChange={(e) => handleColorChange('card', e.target.value)} />
+                            <ColorInput label="Text" value={customTheme.text} onChange={(e) => handleColorChange('text', e.target.value)} />
+                            <ColorInput label="Primary" value={customTheme.primary} onChange={(e) => handleColorChange('primary', e.target.value)} />
+                            <button onClick={onThemeReset} className="w-full text-xs p-2 mt-2 rounded-lg theme-border border hover:opacity-80 transition">Reset to Default Theme</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+        
+        // --- MAIN APP ---
+        const App = () => {
+            const HISTORY_KEY = 'journey_history_v2';
+            const THEME_KEY = 'journey_custom_theme';
+            const QUOTE_KEY = 'journey_daily_quote';
+            const QUOTE_INDEX_KEY = 'journey_quote_index';
+            const COLOR_PALETTE = ['#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef', '#ec4899'];
+            const LOCAL_QUOTES = [{ quote: "The only way to do great work is to love what you do.", author: "Steve Jobs" }, { quote: "The journey of a thousand miles begins with a single step.", author: "Lao Tzu" }, { quote: "Believe you can and you're halfway there.", author: "Theodore Roosevelt" }, { quote: "Success is not final, failure is not fatal: it is the courage to continue that counts.", author: "Winston Churchill" }, { quote: "It does not matter how slowly you go as long as you do not stop.", author: "Confucius" }, { quote: "Act as if what you do makes a difference. It does.", author: "William James" }, { quote: "The secret of getting ahead is getting started.", author: "Mark Twain" }, { quote: "Your limitation—it's only your imagination.", author: "Unknown" }, { quote: "Push yourself, because no one else is going to do it for you.", author: "Unknown" }, { quote: "Great things never come from comfort zones.", author: "Unknown" }, { quote: "Dream it. Wish it. Do it.", author: "Unknown" }, { quote: "Success doesn’t just find you. You have to go out and get it.", author: "Unknown" }, { quote: "The harder you work for something, the greater you'll feel when you achieve it.", author: "Unknown" }, { quote: "Dream bigger. Do bigger.", author: "Unknown" }, { quote: "Don't stop when you're tired. Stop when you're done.", author: "Unknown" }];
+            const DEFAULT_THEME = { background: '#0f172a', text: '#f1f5f9', primary: '#6366f1', card: '#1e293b', cardHover: '#334155', border: '#334155', input: '#0f172a' };
+            const generateId = () => `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
-            // Daily Rollover
-            const todayKey = getTodayKey();
-            if (!state.taskHistory[todayKey]) {
-                const allKeys = Object.keys(state.taskHistory).sort().reverse();
-                const mostRecentKey = allKeys[0];
-                if (mostRecentKey) {
-                    const tasksToCarryOver = state.taskHistory[mostRecentKey]
-                        .filter(task => !task.isUnavoidable)
-                        .map(task => ({
-                            ...task,
-                            id: generateId(),
-                            completed: false,
-                            subtasks: task.subtasks.map(st => ({ ...st, completed: false })),
-                            completedAt: new Date().toISOString()
-                        }));
-                    state.taskHistory[todayKey] = tasksToCarryOver;
-                } else {
-                    state.taskHistory[todayKey] = [];
+            const [taskHistory, setTaskHistory] = useState({});
+            const [customTheme, setCustomTheme] = useState(DEFAULT_THEME);
+            const [isSidebarOpen, setSidebarOpen] = useState(false);
+            const [isTaskModalOpen, setTaskModalOpen] = useState(false);
+            const [isHistoryModalOpen, setHistoryModalOpen] = useState(false);
+            const [editingHistoryLog, setEditingHistoryLog] = useState(null);
+            const [isAddingUnavoidable, setIsAddingUnavoidable] = useState(false);
+            const [viewingDate, setViewingDate] = useState(null);
+            const [isUnavoidableOpen, setIsUnavoidableOpen] = useState(true);
+            const [notifications, setNotifications] = useState([]);
+            const notificationCounter = useRef(0);
+            const fileInputRef = useRef(null);
+            const [dailyQuote, setDailyQuote] = useState(null);
+
+            const audioInitialized = useRef(false);
+            const synth = useRef(null);
+            const polySynth = useRef(null);
+
+            const initAudio = () => {
+                if (audioInitialized.current || typeof Tone === 'undefined') return;
+                try {
+                    if (Tone.context.state !== 'running') Tone.start();
+                    synth.current = new Tone.Synth({ oscillator: { type: "sine" }, envelope: { attack: 0.005, decay: 0.1, sustain: 0, release: 0.1 } }).toDestination();
+                    polySynth.current = new Tone.PolySynth(Tone.Synth, { oscillator: { type: "triangle" }, envelope: { attack: 0.01, decay: 0.4, sustain: 0.05, release: 0.5 } }).toDestination();
+                    audioInitialized.current = true;
+                } catch (e) { console.error("Audio initialization failed:", e); }
+            };
+
+            const playTock = useCallback(() => { if (audioInitialized.current && synth.current) synth.current.triggerAttackRelease("C5", "8n"); }, []);
+            const playChime = useCallback(() => { if (audioInitialized.current && polySynth.current) polySynth.current.triggerAttackRelease(["E5", "G5", "C6"], "4n"); }, []);
+            const playWhoosh = useCallback(() => { if (audioInitialized.current && polySynth.current) polySynth.current.triggerAttackRelease(["C3", "C2"], "8n"); }, []);
+
+            const getTodayKey = useCallback(() => new Date().toISOString().split('T')[0], []);
+            const showNotification = useCallback((message, type) => {
+                notificationCounter.current++;
+                const newNotification = { id: notificationCounter.current, message, type };
+                setNotifications(prev => [...prev, newNotification]);
+            }, []);
+
+            const saveHistoryToStorage = useCallback((updatedHistory) => {
+                try {
+                    localStorage.setItem(HISTORY_KEY, JSON.stringify(updatedHistory));
+                } catch (error) { showNotification('Error saving task history.', 'error'); }
+            }, [showNotification]);
+
+            useEffect(() => {
+                let loadedHistory = {};
+                try {
+                    const storedHistory = localStorage.getItem(HISTORY_KEY);
+                    loadedHistory = storedHistory ? JSON.parse(storedHistory) : {};
+                } catch (error) { showNotification('Error loading history data.', 'error'); }
+                const todayKey = getTodayKey();
+                if (!loadedHistory[todayKey]) {
+                    const mostRecentDateKey = Object.keys(loadedHistory).sort().reverse()[0];
+                    if (mostRecentDateKey) {
+                        const tasksToCarryOver = (loadedHistory[mostRecentDateKey] || []).filter(task => !task.isUnavoidable);
+                        loadedHistory[todayKey] = tasksToCarryOver.map(task => ({ ...task, id: generateId(), completed: false, subtasks: task.subtasks.map(st => ({ ...st, completed: false })), completedAt: new Date().toISOString() }));
+                    } else {
+                        loadedHistory[todayKey] = [];
+                    }
                 }
-                saveToStorage(HISTORY_KEY, state.taskHistory);
-            }
-            
-            // Daily Quote
-            let quoteToSet = null;
-            try {
+                setTaskHistory(loadedHistory);
+                saveHistoryToStorage(loadedHistory);
+                const savedTheme = localStorage.getItem(THEME_KEY);
+                if (savedTheme) { setCustomTheme(JSON.parse(savedTheme)); }
+                let quoteToSet = null;
                 const savedQuoteData = localStorage.getItem(QUOTE_KEY);
                 if (savedQuoteData) {
                     const { date, quote } = JSON.parse(savedQuoteData);
                     if (date === todayKey) quoteToSet = quote;
                 }
                 if (!quoteToSet) {
-                    const lastIndex = parseInt(localStorage.getItem(QUOTE_INDEX_KEY) || '-1');
+                    const lastIndex = parseInt(localStorage.getItem(QUOTE_INDEX_KEY) || '-1', 10);
                     const newIndex = (lastIndex + 1) % LOCAL_QUOTES.length;
                     quoteToSet = LOCAL_QUOTES[newIndex];
-                    saveToStorage(QUOTE_KEY, { date: todayKey, quote: quoteToSet });
+                    localStorage.setItem(QUOTE_KEY, JSON.stringify({ date: todayKey, quote: quoteToSet }));
                     localStorage.setItem(QUOTE_INDEX_KEY, newIndex.toString());
                 }
-            } catch (e) { console.error("Quote loading failed"); }
-            renderQuote(quoteToSet);
+                setDailyQuote(quoteToSet);
+            }, []);
 
-            // Initial Render
-            updateUI();
+            useEffect(() => {
+                const root = document.documentElement;
+                root.style.setProperty('--app-bg', customTheme.background);
+                root.style.setProperty('--app-text', customTheme.text);
+                root.style.setProperty('--app-primary', customTheme.primary);
+                root.style.setProperty('--app-card-bg', customTheme.card);
+                root.style.setProperty('--app-card-hover-bg', customTheme.cardHover);
+                root.style.setProperty('--app-border', customTheme.border);
+                root.style.setProperty('--app-input-bg', customTheme.input);
+                localStorage.setItem(THEME_KEY, JSON.stringify(customTheme));
+            }, [customTheme]);
             
-            // Event Listeners
-            DOMElements.openMenuBtn.addEventListener('click', () => {
-                initAudio();
-                DOMElements.sidebar.classList.remove('-translate-x-full');
-                DOMElements.sidebarOverlay.classList.remove('hidden');
-            });
-            const closeSidebar = () => {
-                DOMElements.sidebar.classList.add('-translate-x-full');
-                DOMElements.sidebarOverlay.classList.add('hidden');
+            const resetTheme = () => setCustomTheme(DEFAULT_THEME);
+
+            const handleSaveTask = (taskData) => {
+                const dateKey = viewingDate || getTodayKey();
+                setTaskHistory(prev => {
+                    const newHistory = { ...prev };
+                    const dateHistory = newHistory[dateKey] ? [...newHistory[dateKey]] : [];
+                    if (taskData.id) { // Update
+                        const index = dateHistory.findIndex(t => t.id === taskData.id);
+                        if (index !== -1) {
+                            const updatedTask = { ...dateHistory[index], title: taskData.title, subtasks: taskData.subtasks };
+                            updatedTask.completed = updatedTask.subtasks.length > 0 ? updatedTask.subtasks.every(st => st.completed) : updatedTask.completed;
+                            dateHistory[index] = updatedTask;
+                        }
+                    } else { // Add
+                        const newLog = { id: generateId(), title: taskData.title, subtasks: taskData.subtasks, completedAt: new Date(dateKey.replace(/-/g, '/')).toISOString(), color: COLOR_PALETTE[Object.values(prev).flat().length % COLOR_PALETTE.length], completed: false, isUnavoidable: isAddingUnavoidable };
+                        dateHistory.push(newLog);
+                        playChime();
+                    }
+                    newHistory[dateKey] = dateHistory;
+                    saveHistoryToStorage(newHistory);
+                    return newHistory;
+                });
+                closeTaskModal();
             };
-            DOMElements.sidebarCloseBtn.addEventListener('click', closeSidebar);
-            DOMElements.sidebarOverlay.addEventListener('click', closeSidebar);
 
-            DOMElements.addDailyTaskBtn.addEventListener('click', () => openTaskModalToAdd(false));
-            DOMElements.taskModal.addEventListener('click', () => closeModal(DOMElements.taskModal, DOMElements.taskModalCard));
-            DOMElements.taskModalCard.addEventListener('click', e => e.stopPropagation());
-            DOMElements.taskModalCloseBtn.addEventListener('click', () => closeModal(DOMElements.taskModal, DOMElements.taskModalCard));
-            DOMElements.taskForm.addEventListener('submit', handleSaveTask);
+            const handleToggleTask = (dateKey, logId, subtaskIndex) => {
+                setTaskHistory(prev => {
+                    const newHistory = { ...prev };
+                    newHistory[dateKey] = (newHistory[dateKey] || []).map(log => {
+                        if (log.id === logId) {
+                            const updatedLog = { ...log, subtasks: JSON.parse(JSON.stringify(log.subtasks)) };
+                            const isMainTaskToggle = subtaskIndex === undefined;
+                            if (!isMainTaskToggle && updatedLog.subtasks.length > 0) {
+                                updatedLog.subtasks[subtaskIndex].completed = !updatedLog.subtasks[subtaskIndex].completed;
+                                updatedLog.completed = updatedLog.subtasks.every(st => st.completed);
+                            } else if (updatedLog.subtasks.length === 0) {
+                                updatedLog.completed = !updatedLog.completed;
+                            } else if (isMainTaskToggle && updatedLog.subtasks.length > 0) {
+                                const targetCompletion = !updatedLog.completed;
+                                updatedLog.subtasks = updatedLog.subtasks.map(st => ({ ...st, completed: targetCompletion }));
+                                updatedLog.completed = targetCompletion;
+                            }
+                            if (updatedLog.completed) playChime(); else playTock();
+                            return updatedLog;
+                        }
+                        return log;
+                    });
+                    saveHistoryToStorage(newHistory);
+                    return newHistory;
+                });
+            };
 
-            DOMElements.addSubtaskBtn.addEventListener('click', () => {
-                const desc = DOMElements.subtaskInput.value.trim();
-                if (desc) {
-                    renderSubtaskListInModal([...DOMElements.subtasksList.querySelectorAll('div > span')].map(s => ({description: s.textContent, completed: false})).concat({ description: desc, completed: false }));
-                    DOMElements.subtaskInput.value = '';
-                }
-            });
-            DOMElements.subtasksList.addEventListener('click', e => {
-                const removeBtn = e.target.closest('button[data-subtask-index]');
-                if (removeBtn) {
-                    const indexToRemove = parseInt(removeBtn.dataset.subtaskIndex);
-                    const currentSubtasks = [...DOMElements.subtasksList.querySelectorAll('div > span')].map(s => ({description: s.textContent, completed: false}));
-                    renderSubtaskListInModal(currentSubtasks.filter((_, i) => i !== indexToRemove));
-                }
-            });
+            const handleDeleteTask = (dateKey, logId) => {
+                setTaskHistory(prev => {
+                    const newHistory = { ...prev, [dateKey]: (prev[dateKey] || []).filter(t => t.id !== logId) };
+                    saveHistoryToStorage(newHistory);
+                    playWhoosh();
+                    return newHistory;
+                });
+            };
             
-            DOMElements.taskListContainer.addEventListener('click', handleTaskListClick);
+            const openTaskModalToAdd = (isUnavoidable) => {
+                setIsAddingUnavoidable(isUnavoidable);
+                setEditingHistoryLog(null);
+                setTaskModalOpen(true);
+            };
+            const openTaskModalToEdit = (dateKey, log) => {
+                setEditingHistoryLog({dateKey, log, isUnavoidable: log.isUnavoidable});
+                setIsAddingUnavoidable(!!log.isUnavoidable);
+                setTaskModalOpen(true);
+            };
+            const closeTaskModal = () => {
+                setTaskModalOpen(false);
+                setEditingHistoryLog(null);
+                setIsAddingUnavoidable(false);
+            };
+            
+            const goToToday = () => setViewingDate(null);
+            const viewDay = (dateKey) => {
+                setViewingDate(dateKey === getTodayKey() ? null : dateKey);
+                setHistoryModalOpen(false);
+            }
 
-            DOMElements.returnToTodayBtn.addEventListener('click', () => {
-                state.viewingDate = null;
-                updateUI();
-                renderQuote(JSON.parse(localStorage.getItem(QUOTE_KEY))?.quote);
-            });
+            const exportData = () => {
+                const data = JSON.stringify({ history: taskHistory, customTheme }, null, 2);
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
+                a.download = `the_journey_backup_${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                URL.revokeObjectURL(a.href);
+            };
 
-            DOMElements.openHistoryBtn.addEventListener('click', () => {
-                closeSidebar();
-                state.calendarDate = new Date();
-                state.calendarSelectedKey = getTodayKey();
-                renderHistoryCalendar();
-                openModal(DOMElements.historyModal, DOMElements.historyModalCard);
-            });
-            DOMElements.historyModal.addEventListener('click', () => closeModal(DOMElements.historyModal, DOMElements.historyModalCard));
-            DOMElements.historyModalCard.addEventListener('click', e => e.stopPropagation());
-            DOMElements.historyModalCloseBtn.addEventListener('click', () => closeModal(DOMElements.historyModal, DOMElements.historyModalCard));
-            DOMElements.prevMonthBtn.addEventListener('click', () => {
-                state.calendarDate.setMonth(state.calendarDate.getMonth() - 1);
-                renderHistoryCalendar();
-            });
-            DOMElements.nextMonthBtn.addEventListener('click', () => {
-                state.calendarDate.setMonth(state.calendarDate.getMonth() + 1);
-                renderHistoryCalendar();
-            });
-            DOMElements.calendarGrid.addEventListener('click', e => {
-                const dayBtn = e.target.closest('button[data-date-key]');
-                if (dayBtn) {
-                    state.calendarSelectedKey = dayBtn.dataset.dateKey;
-                    renderHistoryCalendar();
-                }
-            });
-            DOMElements.historyDayDetails.addEventListener('click', e => {
-                const viewBtn = e.target.closest('button[data-action="view-day"]');
-                if (viewBtn) {
-                    const dateKey = viewBtn.dataset.dateKey;
-                    state.viewingDate = dateKey === getTodayKey() ? null : dateKey;
-                    closeModal(DOMElements.historyModal, DOMElements.historyModalCard);
-                    updateUI();
-                    renderQuote(JSON.parse(localStorage.getItem(QUOTE_KEY))?.quote);
-                }
-            });
+            const importData = (event) => {
+                const file = event.target.files?.[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const importedData = JSON.parse(e.target?.result);
+                        if (!importedData.history) throw new Error("Invalid file format.");
+                        setTaskHistory(importedData.history);
+                        if (importedData.customTheme) setCustomTheme(importedData.customTheme);
+                        saveHistoryToStorage(importedData.history);
+                        setSidebarOpen(false);
+                    } catch (error) {
+                        showNotification(`Import failed: ${error.message || 'File is corrupted.'}`, 'error');
+                    } finally {
+                        if (event.target) event.target.value = '';
+                    }
+                };
+                reader.readAsText(file);
+            };
+            
+            const currentDayKey = viewingDate || getTodayKey();
+            const tasksForView = useMemo(() => taskHistory[currentDayKey] || [], [taskHistory, currentDayKey]);
 
-            DOMElements.themeInputsContainer.addEventListener('input', e => {
-                const input = e.target;
-                if (input.type === 'color') {
-                    handleThemeChange(input.dataset.themeKey, input.value);
-                }
-            });
-            DOMElements.resetThemeBtn.addEventListener('click', () => {
-                state.customTheme = DEFAULT_THEME;
-                applyTheme(DEFAULT_THEME);
-                saveToStorage(THEME_KEY, DEFAULT_THEME);
-                renderThemeInputs();
-            });
-
-            DOMElements.exportDataBtn.addEventListener('click', exportData);
-            DOMElements.importDataBtn.addEventListener('click', () => DOMElements.importFileInput.click());
-            DOMElements.importFileInput.addEventListener('change', importData);
+            return (
+                <React.Fragment>
+                    {isSidebarOpen && <div className="fixed inset-0 bg-black/50 z-30" onClick={() => setSidebarOpen(false)} aria-hidden="true"></div>}
+                    <Sidebar isOpen={isSidebarOpen} onClose={() => setSidebarOpen(false)} customTheme={customTheme} onThemeChange={setCustomTheme} onThemeReset={resetTheme} onOpenHistory={() => { setHistoryModalOpen(true); setSidebarOpen(false); }} onExport={exportData} onImportClick={() => fileInputRef.current?.click()} />
+                    <input type="file" ref={fileInputRef} accept=".json" className="hidden" onChange={importData} />
+                    <div className="flex-grow p-4 md:p-8 pt-2 overflow-y-auto pb-24">
+                        <Header tasks={tasksForView} viewingDate={viewingDate} customTheme={customTheme} />
+                        <TaskList dailyTasks={tasksForView} dateKey={currentDayKey} isUnavoidableOpen={isUnavoidableOpen} onToggleUnavoidable={() => setIsUnavoidableOpen(prev => !prev)} onAddTask={openTaskModalToAdd} onToggleTask={handleToggleTask} onEditTask={openTaskModalToEdit} onDeleteTask={handleDeleteTask} />
+                        {!viewingDate && <QuoteOfTheDay quote={dailyQuote} />}
+                    </div>
+                    {viewingDate && (
+                        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 mb-4 z-30">
+                            <button onClick={goToToday} className="px-6 py-3 text-base font-semibold rounded-full theme-bg text-white hover:opacity-90 transition shadow-lg flex items-center">&larr; Return to Today</button>
+                        </div>
+                    )}
+                    <BottomNav onOpenMenu={() => { setSidebarOpen(true); initAudio(); }} onOpenTaskModal={() => openTaskModalToAdd(false)} />
+                    <TaskModal isOpen={isTaskModalOpen} onClose={closeTaskModal} onSave={handleSaveTask} editingHistoryLog={editingHistoryLog} dateKey={currentDayKey} isAddingUnavoidable={isAddingUnavoidable} />
+                    <HistoryModal isOpen={isHistoryModalOpen} onClose={() => setHistoryModalOpen(false)} historyData={taskHistory} onViewDay={viewDay} />
+                    <NotificationArea notifications={notifications} onDismiss={(id) => setNotifications(n => n.filter(notif => notif.id !== id))} />
+                </React.Fragment>
+            );
         };
 
-        init();
-    });
+        // --- RENDER APP ---
+        const rootElement = document.getElementById('root');
+        if (rootElement) {
+            const root = ReactDOM.createRoot(rootElement);
+            root.render(<App />);
+        }
     </script>
 </body>
 </html>
