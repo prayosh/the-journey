@@ -15,6 +15,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Inter:wght@100..900&display=swap" rel="stylesheet">
     <!-- Load Tone.js for sound effects -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+    <!-- Add Babel for on-the-fly TSX/JSX transpilation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <style>
         /* --- Theme-Independent Styles --- */
@@ -98,5 +100,7 @@
         });
       }
     </script>
+    <!-- Add script tag to load the app, processed by Babel -->
+    <script type="text/babel" data-type="module" src="./index.tsx"></script>
 </body>
 </html>

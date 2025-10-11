@@ -2,10 +2,27 @@ const CACHE_NAME = 'the-journey-cache-v1';
 const URLS_TO_CACHE = [
   './',
   './index.html',
+  './manifest.json',
   './logo.png',
+  // App source files
+  './index.tsx',
+  './App.tsx',
+  './types.ts',
+  './components/Sidebar.tsx',
+  './components/Header.tsx',
+  './components/TaskList.tsx',
+  './components/TaskItem.tsx',
+  './components/BottomNav.tsx',
+  './components/TaskModal.tsx',
+  './components/HistoryModal.tsx',
+  './components/NotificationArea.tsx',
+  './components/Icons.tsx',
+  './components/QuoteOfTheDay.tsx',
+  // External dependencies
   'https://cdn.tailwindcss.com',
   'https://fonts.googleapis.com/css2?family=Great+Vibes&family=Inter:wght@100..900&display=swap',
-  'https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js'
+  'https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js',
+  'https://unpkg.com/@babel/standalone/babel.min.js'
 ];
 
 self.addEventListener('install', (event) => {
