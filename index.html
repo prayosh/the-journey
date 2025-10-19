@@ -3,19 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Journey</title>
-      <!-- Manifest file link -->
-<link rel="manifest" href="manifest.json">
+    <title>The Journey - Advanced Task Tracker</title>
+    <meta name="theme-color" content="#6366f1" />
+    <link rel="manifest" href="/manifest.json">
 
-<!-- Favicon for browser tab -->
-<link rel="icon" type="image/png" sizes="32x32" href="logo.png">
-
-<!-- Apple touch icon (for Add to Home Screen) -->
-<link rel="apple-touch-icon" href="logo.png">
-
-<!-- Theme color for mobile browsers -->
-<meta name="theme-color" content="#000000">
-    
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Load Google Fonts for Cursive and Inter -->
@@ -148,28 +139,6 @@
 
         // --- COMPONENTS ---
 
-        const QuoteOfTheDay = ({ quote }) => {
-            if (!quote) {
-                return (
-                    <div className="max-w-3xl mx-auto mt-12 p-6 border-2 border-dashed rounded-xl app-border transition-colors">
-                        <p className="text-center italic text-gray-400">Loading inspiration...</p>
-                    </div>
-                );
-            }
-            return (
-                <div className="max-w-3xl mx-auto mt-12 p-6 border-2 border-dashed rounded-xl app-border transition-colors">
-                    <figure>
-                        <blockquote className="text-center text-lg italic theme-text">
-                            "{quote.quote}"
-                        </blockquote>
-                        <figcaption className="text-center text-sm text-gray-400 mt-2">
-                            &mdash; {quote.author}
-                        </figcaption>
-                    </figure>
-                </div>
-            );
-        };   
-        
         const Notification = ({ notification, onDismiss }) => {
             useEffect(() => {
                 const timer = setTimeout(() => {
@@ -558,10 +527,7 @@
         const App = () => {
             const HISTORY_KEY = 'journey_history_v2';
             const THEME_KEY = 'journey_custom_theme';
-            const QUOTE_KEY = 'journey_daily_quote';
-            const QUOTE_INDEX_KEY = 'journey_quote_index';
             const COLOR_PALETTE = ['#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef', '#ec4899'];
-            const LOCAL_QUOTES = [{ quote: "The only way to do great work is to love what you do.", author: "Steve Jobs" }, { quote: "The journey of a thousand miles begins with a single step.", author: "Lao Tzu" }, { quote: "Believe you can and you're halfway there.", author: "Theodore Roosevelt" }, { quote: "Success is not final, failure is not fatal: it is the courage to continue that counts.", author: "Winston Churchill" }, { quote: "It does not matter how slowly you go as long as you do not stop.", author: "Confucius" }, { quote: "Act as if what you do makes a difference. It does.", author: "William James" }, { quote: "The secret of getting ahead is getting started.", author: "Mark Twain" }, { quote: "Your limitation—it's only your imagination.", author: "Unknown" }, { quote: "Push yourself, because no one else is going to do it for you.", author: "Unknown" }, { quote: "Great things never come from comfort zones.", author: "Unknown" }, { quote: "Dream it. Wish it. Do it.", author: "Unknown" }, { quote: "Success doesn’t just find you. You have to go out and get it.", author: "Unknown" }, { quote: "The harder you work for something, the greater you'll feel when you achieve it.", author: "Unknown" }, { quote: "Dream bigger. Do bigger.", author: "Unknown" }, { quote: "Don't stop when you're tired. Stop when you're done.", author: "Unknown" }];
             const DEFAULT_THEME = { background: '#0f172a', text: '#f1f5f9', primary: '#6366f1', card: '#1e293b', cardHover: '#334155', border: '#334155', input: '#0f172a' };
             const generateId = () => `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
@@ -577,7 +543,6 @@
             const [notifications, setNotifications] = useState([]);
             const notificationCounter = useRef(0);
             const fileInputRef = useRef(null);
-            const [dailyQuote, setDailyQuote] = useState(null);
 
             const audioInitialized = useRef(false);
             const synth = useRef(null);
@@ -630,20 +595,6 @@
                 saveHistoryToStorage(loadedHistory);
                 const savedTheme = localStorage.getItem(THEME_KEY);
                 if (savedTheme) { setCustomTheme(JSON.parse(savedTheme)); }
-                let quoteToSet = null;
-                const savedQuoteData = localStorage.getItem(QUOTE_KEY);
-                if (savedQuoteData) {
-                    const { date, quote } = JSON.parse(savedQuoteData);
-                    if (date === todayKey) quoteToSet = quote;
-                }
-                if (!quoteToSet) {
-                    const lastIndex = parseInt(localStorage.getItem(QUOTE_INDEX_KEY) || '-1', 10);
-                    const newIndex = (lastIndex + 1) % LOCAL_QUOTES.length;
-                    quoteToSet = LOCAL_QUOTES[newIndex];
-                    localStorage.setItem(QUOTE_KEY, JSON.stringify({ date: todayKey, quote: quoteToSet }));
-                    localStorage.setItem(QUOTE_INDEX_KEY, newIndex.toString());
-                }
-                setDailyQuote(quoteToSet);
             }, []);
 
             useEffect(() => {
@@ -783,7 +734,6 @@
                     <div className="flex-grow p-4 md:p-8 pt-2 overflow-y-auto pb-24">
                         <Header tasks={tasksForView} viewingDate={viewingDate} customTheme={customTheme} />
                         <TaskList dailyTasks={tasksForView} dateKey={currentDayKey} isUnavoidableOpen={isUnavoidableOpen} onToggleUnavoidable={() => setIsUnavoidableOpen(prev => !prev)} onAddTask={openTaskModalToAdd} onToggleTask={handleToggleTask} onEditTask={openTaskModalToEdit} onDeleteTask={handleDeleteTask} />
-                        {!viewingDate && <QuoteOfTheDay quote={dailyQuote} />}
                     </div>
                     {viewingDate && (
                         <div className="fixed bottom-0 left-1/2 -translate-x-1/2 mb-4 z-30">
